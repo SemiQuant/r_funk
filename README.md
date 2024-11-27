@@ -6,7 +6,7 @@ You can install the development version of Rfunk from GitHub with:
 
 ```r
 # install.packages("devtools")
-devtools::install_github("SemiQuant/Rfunk")
+devtools::install_github("SemiQuant/r_funk")
 ```
 
 ## Usage
