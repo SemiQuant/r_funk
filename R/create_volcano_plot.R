@@ -2,6 +2,7 @@
 #' @importFrom ggrepel geom_text_repel
 #' @importFrom DESeq2 results resultsNames
 #' @export
+
 create_volcano_plot <- function(dds,
                                 result_name = NULL,
                                 title = NULL,
@@ -79,13 +80,30 @@ create_volcano_plot <- function(dds,
                                  "")
   }
   
+  # Replace 0 p-values with the smallest non-zero p-value
+  min_nonzero_p <- min(results(dds_rna)$pvalue[results(dds_rna)$pvalue > 0], na.rm = TRUE)
+  modified_pvals <- replace(results(dds_rna)$pvalue, results(dds_rna)$pvalue == 0, min_nonzero_p)
+  
   # Get y-axis limit for annotation placement
-  y_max <- max(-log10(volc_plot_data$P), na.rm = TRUE)
+  y_max <- max(-log10(modified_pvals), na.rm = TRUE)
   annotation_y <- y_max * 1.1  # Place annotations 10% above the highest point
   
-  # Create the plot
+  
+  # Calculate reasonable y-axis maximum from the non-zero, non-infinite values
+  plot_ceiling <- results(dds_rna)$pvalue
+  plot_ceiling <- plot_ceiling[plot_ceiling > 0]  # Remove zeros
+  plot_ceiling <- -log10(plot_ceiling)  # Convert to -log10 scale
+  max_real_y <- max(plot_ceiling, na.rm = TRUE)  # Get max of real values
+  
+  # Add a small buffer (e.g., 20% of the range) above the highest real value
+  plot_ceiling <- max_real_y * 1.2  # This will make the infinite values appear closer
+  
+  # Then in your ggplot code, use this plot_ceiling for both the y-axis limits and capping:
+  volc_plot_data$plotY <- pmin(-log10(volc_plot_data$P), plot_ceiling)
+  
+  # Modify the ggplot call to use plotY for position but keep original values for coloring
   p <- ggplot(data = volc_plot_data,
-              aes(x = EffectSize, y = -log10(P),
+              aes(x = EffectSize, y = plotY,  # Use capped values for plotting
                   colour = threshold, text = ID)) +
     geom_point(alpha = point_alpha, size = point_size) +
     xlab("Effect Size (log2FC)") + 
@@ -115,8 +133,15 @@ create_volcano_plot <- function(dds,
              y = annotation_y * 0.98,
              yend = annotation_y * 0.98,
              arrow = arrow(length = unit(0.2, "cm"))) +
-    # Expand y-axis to make room for annotations
-    scale_y_continuous(expand = expansion(mult = c(0.05, 0.15)))
+    scale_y_continuous(
+      limits = c(0, plot_ceiling),
+      expand = expansion(mult = c(0.05, 0.05))
+    ) +
+    # Optional: Add text to indicate points are capped
+    annotate("text", x = 0, y = plot_ceiling, 
+             label = "p < 1e-50", 
+             size = 3)
+  
   
   # Add repelled labels if requested
   if (label_significant) {
