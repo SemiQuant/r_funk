@@ -1,24 +1,7 @@
-#' Generate a volcano plot from DESeq2 results
-#'
-#' @param dds DESeqDataSet object
-#' @param result_name Character string specifying which result to plot from resultsNames(dds). 
-#'        If NULL, uses the second result name (default: NULL)
-#' @param title Character string for plot title (default: NULL, will use result_name)
-#' @param condition_a Name of first condition (default: NULL, will attempt to parse from result_name)
-#' @param condition_b Name of second condition (default: NULL, will attempt to parse from result_name)
-#' @param p_value_threshold Numeric value for p-value significance threshold (default: 0.05)
-#' @param effect_size_threshold Numeric value for log2 fold change threshold (default: 1)
-#' @param label_significant Logical indicating whether to label significant points (default: TRUE)
-#' @param n_labels Number of top genes to label (default: 20)
-#' @param point_alpha Numeric value for point transparency (default: 0.4)
-#' @param point_size Numeric value for point size (default: 1.75)
-#' @param label_size Numeric value for label text size (default: 2)
-#'
-#' @return A ggplot object containing the volcano plot
-#' @import ggplot2
-#' @import DESeq2
-#' @import ggrepel
-
+#' @importFrom ggplot2 ggplot aes geom_point xlab ylab ggtitle theme_bw theme geom_hline geom_vline annotate scale_y_continuous layer_scales expansion element_text element_blank
+#' @importFrom ggrepel geom_text_repel
+#' @importFrom DESeq2 results resultsNames
+#' @export
 create_volcano_plot <- function(dds,
                                 result_name = NULL,
                                 title = NULL,
