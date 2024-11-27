@@ -1,0 +1,195 @@
+#' Generate a volcano plot from DESeq2 results
+#'
+#' @param dds DESeqDataSet object
+#' @param result_name Character string specifying which result to plot from resultsNames(dds). 
+#'        If NULL, uses the second result name (default: NULL)
+#' @param title Character string for plot title (default: NULL, will use result_name)
+#' @param condition_a Name of first condition (default: NULL, will attempt to parse from result_name)
+#' @param condition_b Name of second condition (default: NULL, will attempt to parse from result_name)
+#' @param p_value_threshold Numeric value for p-value significance threshold (default: 0.05)
+#' @param effect_size_threshold Numeric value for log2 fold change threshold (default: 1)
+#' @param label_significant Logical indicating whether to label significant points (default: TRUE)
+#' @param n_labels Number of top genes to label (default: 20)
+#' @param point_alpha Numeric value for point transparency (default: 0.4)
+#' @param point_size Numeric value for point size (default: 1.75)
+#' @param label_size Numeric value for label text size (default: 2)
+#'
+#' @return A ggplot object containing the volcano plot
+#' @import ggplot2
+#' @import DESeq2
+#' @import ggrepel
+
+create_volcano_plot <- function(dds,
+                                result_name = NULL,
+                                title = NULL,
+                                condition_a = NULL,
+                                condition_b = NULL,
+                                p_value_threshold = 0.05,
+                                effect_size_threshold = 1,
+                                label_significant = TRUE,
+                                n_labels = 20,
+                                point_alpha = 0.4,
+                                point_size = 1.75,
+                                label_size = 2) {
+  
+  # Check if ggrepel is installed
+  if (!requireNamespace("ggrepel", quietly = TRUE)) {
+    stop("Package 'ggrepel' is required for label placement. Please install it using install.packages('ggrepel')")
+  }
+  
+  # Use second result name as default if result_name is NULL
+  if (is.null(result_name)) {
+    result_names <- resultsNames(dds)
+    if (length(result_names) < 2) {
+      stop("No second result name available. Please specify result_name explicitly.")
+    }
+    result_name <- result_names[2]
+  }
+  
+  # Get results for specified comparison
+  deseq_result <- results(dds, name = result_name)
+  
+  # Set title if not provided
+  if (is.null(title)) {
+    title <- result_name
+  }
+  
+  # Try to parse conditions from result name if not provided
+  if (is.null(condition_a) || is.null(condition_b)) {
+    parts <- strsplit(result_name, "_vs_|_VS_")[[1]]
+    if (length(parts) >= 2) {
+      if (is.null(condition_b)) condition_b <- parts[1]
+      if (is.null(condition_a)) condition_a <- parts[2]
+    } else {
+      condition_a <- "Condition A"
+      condition_b <- "Condition B"
+    }
+  }
+  
+  # Create data frame for plotting
+  volc_plot_data <- data.frame(
+    ID = rownames(deseq_result),
+    P = deseq_result$pvalue,
+    P.adj = deseq_result$padj,
+    EffectSize = deseq_result$log2FoldChange,
+    threshold = FALSE
+  )
+  
+  # Remove any NA values
+  volc_plot_data <- volc_plot_data[complete.cases(volc_plot_data), ]
+  
+  # Determine significant genes
+  volc_plot_data$threshold <- as.factor(
+    volc_plot_data$P.adj <= p_value_threshold & 
+      abs(volc_plot_data$EffectSize) >= effect_size_threshold
+  )
+  
+  # Create labels for top significant genes if requested
+  volc_plot_data$lab <- ""
+  if (label_significant) {
+    sig_genes <- volc_plot_data[volc_plot_data$P.adj <= p_value_threshold & 
+                                  abs(volc_plot_data$EffectSize) >= effect_size_threshold, ]
+    sig_genes <- sig_genes[order(abs(sig_genes$EffectSize), decreasing = TRUE), ]
+    top_genes <- head(sig_genes$ID, n_labels)
+    volc_plot_data$lab <- ifelse(volc_plot_data$ID %in% top_genes,
+                                 as.character(volc_plot_data$ID), 
+                                 "")
+  }
+  
+  # Get y-axis limit for annotation placement
+  y_max <- max(-log10(volc_plot_data$P), na.rm = TRUE)
+  annotation_y <- y_max * 1.1  # Place annotations 10% above the highest point
+  
+  # Create the plot
+  p <- ggplot(data = volc_plot_data,
+              aes(x = EffectSize, y = -log10(P),
+                  colour = threshold, text = ID)) +
+    geom_point(alpha = point_alpha, size = point_size) +
+    xlab("Effect Size (log2FC)") + 
+    ylab("-log10 p-value") +
+    ggtitle(title) +
+    theme_bw() +
+    theme(legend.position = "none",
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank()) +
+    # Add condition labels as annotations
+    annotate("text", x = -max(abs(volc_plot_data$EffectSize))/2, y = annotation_y,
+             label = paste("Upregulated in", condition_a),
+             hjust = 0.5, size = 3) +
+    annotate("text", x = max(abs(volc_plot_data$EffectSize))/2, y = annotation_y,
+             label = paste("Upregulated in", condition_b),
+             hjust = 0.5, size = 3) +
+    # Add arrows with corrected directions
+    annotate("segment", 
+             x = -effect_size_threshold, 
+             xend = -max(abs(volc_plot_data$EffectSize))/2,
+             y = annotation_y * 0.98,
+             yend = annotation_y * 0.98,
+             arrow = arrow(length = unit(0.2, "cm"))) +
+    annotate("segment", 
+             x = effect_size_threshold, 
+             xend = max(abs(volc_plot_data$EffectSize))/2,
+             y = annotation_y * 0.98,
+             yend = annotation_y * 0.98,
+             arrow = arrow(length = unit(0.2, "cm"))) +
+    # Expand y-axis to make room for annotations
+    scale_y_continuous(expand = expansion(mult = c(0.05, 0.15)))
+  
+  # Add repelled labels if requested
+  if (label_significant) {
+    p <- p + ggrepel::geom_text_repel(
+      aes(label = lab),
+      size = label_size,
+      colour = "dark grey",
+      max.overlaps = Inf,
+      min.segment.length = 0,
+      box.padding = 0.5,
+      segment.color = "grey50",
+      segment.size = 0.2,
+      seed = 42
+    )
+  }
+  
+  # Add threshold lines
+  p <- p + 
+    geom_hline(yintercept = -log10(p_value_threshold), 
+               colour = "grey", 
+               linetype = "longdash") +
+    geom_vline(xintercept = c(-1 * effect_size_threshold, effect_size_threshold), 
+               colour = "grey",
+               linetype = "longdash") +
+    geom_vline(xintercept = 0,
+               colour = "grey",
+               linetype = "solid",
+               alpha = 0.5)
+  
+  return(p)
+}
+
+#' Create volcano plots for all comparisons in a DESeq2 object
+#'
+#' @param dds DESeqDataSet object
+#' @param ... Additional arguments passed to create_volcano_plot function
+#'
+#' @return A list of ggplot objects, one for each comparison
+create_all_volcano_plots <- function(dds, ...) {
+  result_names <- resultsNames(dds)
+  plots <- lapply(result_names, function(name) {
+    create_volcano_plot(dds, result_name = name, ...)
+  })
+  names(plots) <- result_names
+  return(plots)
+}
+
+# Example usage:
+# For a single comparison:
+# plot <- create_volcano_plot(dds, "treatment_vs_control")
+
+# For custom conditions:
+# plot <- create_volcano_plot(dds, 
+#                           result_name = "treatment_vs_control",
+#                           condition_a = "Control",
+#                           condition_b = "Treatment")
+
+# For all comparisons:
+# all_plots <- create_all_volcano_plots(dds)
