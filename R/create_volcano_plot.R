@@ -90,8 +90,8 @@ create_volcano_plot <- function(dds,
   # Calculate reasonable y-axis maximum from the non-zero, non-infinite values
   plot_ceiling <- -log10(min_nonzero_p)  # Convert to -log10 scale
   # Add a small buffer (e.g., 20% of the range) above the highest real value
-  plot_ceiling <- max_real_y * 1.2  # This will make the infinite values appear closer
-  annotation_y <- max_real_y * 1.1
+  plot_ceiling <- y_max * 1.2  # This will make the infinite values appear closer
+  annotation_y <- y_max * 1.1
   # Then in your ggplot code, use this plot_ceiling for both the y-axis limits and capping:
   volc_plot_data$plotY <- pmin(-log10(volc_plot_data$P), plot_ceiling)
   
