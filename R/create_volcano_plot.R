@@ -132,7 +132,7 @@ create_volcano_plot <- function(dds,
       expand = expansion(mult = c(0.05, 0.05))
     )
   
-  if (sum(volc_plot_data$P[volc_plot_data$P > 0]) > 0){
+  if (any(volc_plot_data$P == 0)){
     p <- p +
       annotate("text", x = 0, y = plot_ceiling, 
                label = "p ~ 0", 
