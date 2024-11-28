@@ -2,7 +2,6 @@
 #' @importFrom ggrepel geom_text_repel
 #' @importFrom DESeq2 results resultsNames
 #' @export
-
 create_volcano_plot <- function(dds,
                                 result_name = NULL,
                                 title = NULL,
@@ -81,18 +80,15 @@ create_volcano_plot <- function(dds,
   }
   
   # Replace 0 p-values with the smallest non-zero p-value
-  min_nonzero_p <- min(results(dds_rna)$pvalue[results(dds_rna)$pvalue > 0], na.rm = TRUE)
-  modified_pvals <- replace(results(dds_rna)$pvalue, results(dds_rna)$pvalue == 0, min_nonzero_p)
+  min_nonzero_p <- min(volc_plot_data$P[volc_plot_data$P > 0], na.rm = TRUE)
+  volc_plot_data$P <- replace(volc_plot_data$P, volc_plot_data$P == 0, min_nonzero_p)
   
   # Get y-axis limit for annotation placement
   y_max <- max(-log10(modified_pvals), na.rm = TRUE)
   annotation_y <- y_max * 1.1  # Place annotations 10% above the highest point
   
-  
   # Calculate reasonable y-axis maximum from the non-zero, non-infinite values
-  plot_ceiling <- results(dds_rna)$pvalue
-  plot_ceiling <- plot_ceiling[plot_ceiling > 0]  # Remove zeros
-  plot_ceiling <- -log10(plot_ceiling)  # Convert to -log10 scale
+  plot_ceiling <- -log10(min_nonzero_p)  # Convert to -log10 scale
   max_real_y <- max(plot_ceiling, na.rm = TRUE)  # Get max of real values
   
   # Add a small buffer (e.g., 20% of the range) above the highest real value
