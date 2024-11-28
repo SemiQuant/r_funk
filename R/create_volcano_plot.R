@@ -132,12 +132,14 @@ create_volcano_plot <- function(dds,
     scale_y_continuous(
       limits = c(0, plot_ceiling),
       expand = expansion(mult = c(0.05, 0.05))
-    ) +
-    # Optional: Add text to indicate points are capped
-    annotate("text", x = 0, y = plot_ceiling, 
-             label = "p < 1e-50", 
-             size = 3)
+    )
   
+  if (plot_ceiling > 100){
+    p <- p +
+      annotate("text", x = 0, y = plot_ceiling, 
+               label = "p < 1e-50", 
+               size = 3)
+  }
   
   # Add repelled labels if requested
   if (label_significant) {
