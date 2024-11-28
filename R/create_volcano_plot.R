@@ -80,6 +80,7 @@ create_volcano_plot <- function(dds,
   }
   
   # Replace 0 p-values with the smallest non-zero p-value
+  zeros <- any(volc_plot_data$P == 0)
   min_nonzero_p <- min(volc_plot_data$P[volc_plot_data$P > 0], na.rm = TRUE)
   volc_plot_data$P <- replace(volc_plot_data$P, volc_plot_data$P == 0, min_nonzero_p)
   
@@ -132,7 +133,7 @@ create_volcano_plot <- function(dds,
       expand = expansion(mult = c(0.05, 0.05))
     )
   
-  if (any(volc_plot_data$P == 0)){
+  if (zeros){
     p <- p +
       annotate("text", x = 0, y = plot_ceiling, 
                label = "p ~ 0", 
