@@ -153,3 +153,35 @@ create_signature_heatmaps <- function(vst_data, dds, result_names,
     
     return(heatmap_list)
 }
+
+#' List Available Gene Signatures
+#'
+#' This function displays all available gene signatures in the package's built-in dataset
+#' or from a provided Excel file.
+#'
+#' @param signatures_file Optional path to an Excel file containing gene signatures.
+#'        If NULL (default), uses the package's built-in gene signatures dataset
+#'
+#' @return A data frame containing unique signature IDs and their descriptions
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' list_signatures()
+#' list_signatures("path/to/signatures.xlsx")
+#' }
+list_signatures <- function(signatures_file = NULL) {
+    # Get gene signatures
+    if (is.null(signatures_file)) {
+        gene_symbols_df <- gene_signatures
+    } else {
+        gene_symbols_df <- readxl::read_excel(signatures_file)
+    }
+    
+    # Return unique signatures with their descriptions
+    unique_sigs <- gene_symbols_df %>%
+        dplyr::select(ID, Description) %>%
+        dplyr::distinct()
+    
+    return(unique_sigs)
+}
