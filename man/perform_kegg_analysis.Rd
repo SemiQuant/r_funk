@@ -9,7 +9,8 @@ perform_kegg_analysis(
   title,
   p_cutoff = 0.05,
   fc_cutoff = 0,
-  genome = "mmu"
+  genome = "mmu",
+  cat_show = 20
 )
 }
 \arguments{
@@ -20,6 +21,12 @@ perform_kegg_analysis(
 \item{p_cutoff}{Numeric value for adjusted p-value cutoff (default: 0.05)}
 
 \item{fc_cutoff}{Numeric value for log2 fold change cutoff (default: 0)}
+
+\item{genome}{Character string specifying the genome ("mmu" for mouse or "hsa" for human)}
+
+\item{cat_show}{Numeric value specifying number of categories to show in the plot (default: 20)}
+
+\item{id_col}{Character string specifying the column name containing gene identifiers}
 }
 \value{
 A data frame containing KEGG enrichment results or a message if no
