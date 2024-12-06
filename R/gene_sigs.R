@@ -135,7 +135,7 @@ create_signature_heatmaps <- function(vst_data, dds, result_names,
         plot_title <- sprintf("Gene Signature: %s", current_id)
         
         # Create heatmap
-        heatmap_list[[current_id]] <- pheatmap::pheatmap(
+        hmap <- pheatmap::pheatmap(
             current_hmap_data,
             scale = scale,
             show_rownames = TRUE,
@@ -150,9 +150,16 @@ create_signature_heatmaps <- function(vst_data, dds, result_names,
             clustering_distance_cols = "correlation",
             silent = TRUE
         )
+        
+        # Store the heatmap
+        heatmap_list[[current_id]] <- hmap
+        
+        # Print the heatmap
+        grid::grid.newpage()
+        grid::grid.draw(hmap$gtable)
     }
     
-    return(heatmap_list)
+    return(invisible(heatmap_list))
 }
 
 #' List Available Gene Signatures

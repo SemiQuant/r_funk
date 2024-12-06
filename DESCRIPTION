@@ -25,6 +25,7 @@ Imports:
     rlang,
     pheatmap,
     RColorBrewer,
-    readxl
+    readxl,
+    grid
 Depends: 
     R (>= 3.5)
