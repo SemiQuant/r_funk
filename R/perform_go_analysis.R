@@ -29,6 +29,7 @@
 #' @import clusterProfiler
 #' @import dplyr
 #' @importFrom AnnotationDbi mapIds
+#' @importFrom rlang .data
 #'
 #' @examples
 #' results_df <- data.frame(
@@ -67,9 +68,16 @@ perform_go_analysis <- function(results_df, title, p_cutoff = 0.05, fc_cutoff = 
       return(data.frame(message = "No valid ID column found"))
     }
     
+    # Check for required columns
+    required_cols <- c("padj", "log2FoldChange")
+    missing_cols <- required_cols[!required_cols %in% names(results_df)]
+    if (length(missing_cols) > 0) {
+      stop(paste("Missing required columns:", paste(missing_cols, collapse = ", ")))
+    }
+    
     sig_genes <- results_df %>%
-      filter(!is.na(padj) & !is.na(log2FoldChange)) %>%
-      filter(padj < p_cutoff & abs(log2FoldChange) > fc_cutoff) %>%
+      filter(!is.na(.data$padj) & !is.na(.data$log2FoldChange)) %>%
+      filter(.data$padj < p_cutoff & abs(.data$log2FoldChange) > fc_cutoff) %>%
       pull(!!sym(id_col))
     
     # Set up genome database
