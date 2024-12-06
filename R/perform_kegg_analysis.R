@@ -106,22 +106,7 @@ perform_kegg_analysis <- function(results_df, title, p_cutoff = 0.05, fc_cutoff 
 
     if (inherits(kk, "try-error") || nrow(kk@result) == 0) {
         message("No significant KEGG pathways found")
-        # Create a single-row data frame and then remove the row
-        empty_result <- data.frame(
-            ID = NA_character_,
-            Description = NA_character_,
-            GeneRatio = NA_character_,
-            BgRatio = NA_character_,
-            pvalue = NA_real_,
-            p.adjust = NA_real_,
-            qvalue = NA_real_,
-            geneID = NA_character_,
-            Count = NA_real_,
-            Comparison = title,
-            stringsAsFactors = FALSE
-        )
-        empty_result <- empty_result[0, ]  # Remove the row but keep structure
-        return(empty_result)
+        return(data.frame(message = "No significant pathways"))
     }
     
     # Clean pathway descriptions
@@ -135,14 +120,14 @@ perform_kegg_analysis <- function(results_df, title, p_cutoff = 0.05, fc_cutoff 
     plot_file <- paste0("kegg_dotplot_", make.names(title), ".pdf")
     tryCatch({
         p <- dotplot(kk, showCategory = cat_show, title = title)
-        ggsave(filename = plot_file, 
-               plot = p, 
-               width = 10, 
-               height = 8)
-        message("Plot saved to: ", plot_file)
+        # ggsave(filename = plot_file, 
+        #        plot = p, 
+        #        width = 10, 
+        #        height = 8)
+        # message("Plot saved to: ", plot_file)
+        print(p)
     }, error = function(e) {
         warning("Failed to create or save plot: ", e$message)
     })
-    
     return(results)
 }
