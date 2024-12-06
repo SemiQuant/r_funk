@@ -1,6 +1,6 @@
 Package: Rfunk
 Title: Visualization Tools for Differential Expression Analysis
-Version: 0.1.0
+Version: 0.1.1
 Authors@R: 
     person("SemiQuant", email = "Jason.Limberis@ucsf.edu", role = c("aut", "cre"))
 Description: A collection of useful R functions for bioinformatics analysis. 
@@ -13,4 +13,9 @@ RoxygenNote: 7.3.2
 Imports: 
     ggplot2,
     ggrepel,
-    DESeq2
+    DESeq2,
+    DT,
+    htmlwidgets,
+    org.Mm.eg.db,
+    clusterProfiler,
+    dplyr
