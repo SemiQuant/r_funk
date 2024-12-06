@@ -106,19 +106,21 @@ perform_kegg_analysis <- function(results_df, title, p_cutoff = 0.05, fc_cutoff 
 
     if (inherits(kk, "try-error") || nrow(kk@result) == 0) {
         message("No significant KEGG pathways found")
-        # Return a properly structured empty result with Comparison column
+        # Create a single-row data frame and then remove the row
         empty_result <- data.frame(
-            ID = character(),
-            Description = character(),
-            GeneRatio = character(),
-            BgRatio = character(),
-            pvalue = numeric(),
-            p.adjust = numeric(),
-            qvalue = numeric(),
-            geneID = character(),
-            Count = numeric()
+            ID = NA_character_,
+            Description = NA_character_,
+            GeneRatio = NA_character_,
+            BgRatio = NA_character_,
+            pvalue = NA_real_,
+            p.adjust = NA_real_,
+            qvalue = NA_real_,
+            geneID = NA_character_,
+            Count = NA_real_,
+            Comparison = title,
+            stringsAsFactors = FALSE
         )
-        empty_result$Comparison <- title  # Add the comparison column
+        empty_result <- empty_result[0, ]  # Remove the row but keep structure
         return(empty_result)
     }
     
