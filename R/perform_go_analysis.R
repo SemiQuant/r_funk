@@ -28,6 +28,7 @@
 #' @import org.Hs.eg.db
 #' @import clusterProfiler
 #' @import dplyr
+#' @importFrom AnnotationDbi mapIds
 #'
 #' @examples
 #' results_df <- data.frame(
@@ -83,13 +84,22 @@ perform_go_analysis <- function(results_df, title, p_cutoff = 0.05, fc_cutoff = 
     }
     
     # Convert gene symbols to ENTREZ IDs
-    entrez_ids <- mapIds(genome_db,
-                        keys = sig_genes,
-                        keytype = "SYMBOL",
-                        column = "ENTREZID",
-                        multiVals = "first")
+    tryCatch({
+      entrez_ids <- mapIds(genome_db,
+                          keys = sig_genes,
+                          keytype = "SYMBOL",
+                          column = "ENTREZID",
+                          multiVals = "first")
+    }, error = function(e) {
+      stop(paste("Error converting gene symbols to ENTREZ IDs:", e$message))
+    })
     
-    # Remove NAs
+    # Remove NAs and provide more informative message
+    na_count <- sum(is.na(entrez_ids))
+    if (na_count > 0) {
+      warning(sprintf("%d genes could not be mapped to ENTREZ IDs", na_count))
+    }
+    
     entrez_ids <- entrez_ids[!is.na(entrez_ids)]
     
     if (length(entrez_ids) == 0) {

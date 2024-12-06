@@ -17,5 +17,7 @@ Imports:
     DT,
     htmlwidgets,
     org.Mm.eg.db,
+    org.Hs.eg.db,
     clusterProfiler,
-    dplyr
+    dplyr,
+    AnnotationDbi
