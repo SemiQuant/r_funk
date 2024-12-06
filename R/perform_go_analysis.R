@@ -29,7 +29,6 @@
 #' @import clusterProfiler
 #' @import dplyr
 #' @importFrom AnnotationDbi mapIds
-#' @importFrom rlang .data
 #'
 #' @examples
 #' results_df <- data.frame(
@@ -76,9 +75,9 @@ perform_go_analysis <- function(results_df, title, p_cutoff = 0.05, fc_cutoff = 
     }
     
     sig_genes <- results_df %>%
-      filter(!is.na(.data$padj) & !is.na(.data$log2FoldChange)) %>%
-      filter(.data$padj < p_cutoff & abs(.data$log2FoldChange) > fc_cutoff) %>%
-      pull(!!sym(id_col))
+      dplyr::filter(!is.na(padj) & !is.na(log2FoldChange)) %>%
+      dplyr::filter(padj < p_cutoff & abs(log2FoldChange) > fc_cutoff) %>%
+      dplyr::pull(!!sym(id_col))
     
     # Set up genome database
     if (genome == "mmu") {
