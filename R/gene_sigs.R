@@ -114,6 +114,17 @@ create_signature_heatmaps <- function(vst_data, dds, result_names,
     # Create a list to store heatmaps
     heatmap_list <- list()
     
+    # Set up the plotting device for multiple plots
+    n_plots <- length(unique_ids)
+    if(n_plots > 0) {
+        # Calculate grid layout
+        n_rows <- ceiling(sqrt(n_plots))
+        n_cols <- ceiling(n_plots/n_rows)
+        
+        # Set up the plotting layout
+        graphics::par(mfrow = c(n_rows, n_cols))
+    }
+    
     # Create a heatmap for each signature
     for(current_id in unique_ids) {
         # Filter genes for current signature
@@ -147,17 +158,15 @@ create_signature_heatmaps <- function(vst_data, dds, result_names,
             cluster_rows = TRUE,
             main = plot_title,
             clustering_distance_rows = "correlation",
-            clustering_distance_cols = "correlation",
-            silent = TRUE
+            clustering_distance_cols = "correlation"
         )
         
         # Store the heatmap
         heatmap_list[[current_id]] <- hmap
-        
-        # Print the heatmap
-        grid::grid.newpage()
-        grid::grid.draw(hmap$gtable)
     }
+    
+    # Reset the plotting parameters
+    graphics::par(mfrow = c(1, 1))
     
     return(invisible(heatmap_list))
 }
