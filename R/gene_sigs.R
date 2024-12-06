@@ -162,7 +162,7 @@ create_signature_heatmaps <- function(vst_data, dds, result_names,
 #' @param signatures_file Optional path to an Excel file containing gene signatures.
 #'        If NULL (default), uses the package's built-in gene signatures dataset
 #'
-#' @return A data frame containing unique signature IDs and their descriptions
+#' @return A data frame containing unique signature IDs and the number of genes in each signature
 #' @export
 #'
 #' @examples
@@ -178,10 +178,13 @@ list_signatures <- function(signatures_file = NULL) {
         gene_symbols_df <- readxl::read_excel(signatures_file)
     }
     
-    # Return unique signatures with their descriptions
+    # Return unique signatures with gene counts
     unique_sigs <- gene_symbols_df %>%
-        dplyr::select(ID, Description) %>%
-        dplyr::distinct()
+        dplyr::group_by(ID) %>%
+        dplyr::summarise(
+            n_genes = dplyr::n(),
+            genes = paste(Symbol, collapse = ", ")
+        )
     
     return(unique_sigs)
 }

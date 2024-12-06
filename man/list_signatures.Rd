@@ -11,7 +11,7 @@ list_signatures(signatures_file = NULL)
 If NULL (default), uses the package's built-in gene signatures dataset}
 }
 \value{
-A data frame containing unique signature IDs and their descriptions
+A data frame containing unique signature IDs and the number of genes in each signature
 }
 \description{
 This function displays all available gene signatures in the package's built-in dataset
