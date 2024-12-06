@@ -21,4 +21,7 @@ Imports:
     clusterProfiler,
     dplyr,
     AnnotationDbi,
-    rlang
+    rlang,
+    pheatmap,
+    RColorBrewer,
+    readxl
