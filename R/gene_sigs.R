@@ -147,7 +147,8 @@ create_signature_heatmaps <- function(vst_data, dds, result_names,
             cluster_rows = TRUE,
             main = plot_title,
             clustering_distance_rows = "correlation",
-            clustering_distance_cols = "correlation"
+            clustering_distance_cols = "correlation",
+            silent = TRUE
         )
     }
     
