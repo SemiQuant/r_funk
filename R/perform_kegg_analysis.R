@@ -106,7 +106,19 @@ perform_kegg_analysis <- function(results_df, title, p_cutoff = 0.05, fc_cutoff 
 
     if (inherits(kk, "try-error") || nrow(kk@result) == 0) {
         message("No significant KEGG pathways found")
-        return(data.frame(message = "No significant pathways"))
+        # Return a properly structured empty result
+        return(data.frame(
+            ID = character(),
+            Description = character(),
+            GeneRatio = character(),
+            BgRatio = character(),
+            pvalue = numeric(),
+            p.adjust = numeric(),
+            qvalue = numeric(),
+            geneID = character(),
+            Count = numeric(),
+            Comparison = character()
+        ))
     }
     
     # Clean pathway descriptions
