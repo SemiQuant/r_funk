@@ -96,7 +96,7 @@ create_signature_heatmaps <- function(vst_data, dds, result_names,
     
     # Add significance colors
     for(result_name in result_names) {
-        ann_colors[[result_name]] <- c("TRUE" = "red", "FALSE" = "white")
+        ann_colors[[result_name]] <- c("TRUE" = "#5bf5a5", "FALSE" = "white")
     }
     
     # Set row names for heatmap
