@@ -128,8 +128,12 @@ perform_go_analysis <- function(results_df, title, p_cutoff = 0.05, fc_cutoff = 
       
       # Dot plot
       p1 <- dotplot(ego, 
-                   title = paste0("GO Terms (", ont, ") - ", title),
-                   showCategory = 20)
+                   title = paste0("Top 20 GO Terms (", ont, ") - ", title),
+                   showCategory = 20) +
+        ggplot2::theme(
+          axis.text.y = ggplot2::element_text(size = 8),  # Reduce text size
+          plot.margin = ggplot2::margin(t = 10, r = 10, b = 10, l = 100)  # Increase left margin
+        )
       print(p1)
       
       # Return results table
