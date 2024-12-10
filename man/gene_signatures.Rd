@@ -5,19 +5,15 @@
 \alias{gene_signatures}
 \title{Gene Signatures Dataset}
 \format{
-A data frame with columns:
-\describe{
-\item{Symbol}{Gene symbol}
-\item{ID}{Signature identifier}
-}
+A data frame containing gene signatures
 }
 \source{
-Internal collection of gene signatures
+Internal gene signatures compilation
 }
 \usage{
 gene_signatures
 }
 \description{
-A dataset containing gene signatures for various pathways and conditions
+A dataset containing gene signatures information
 }
 \keyword{datasets}
