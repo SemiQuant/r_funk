@@ -17,3 +17,8 @@ A list of ggplot objects, one for each comparison
 \description{
 Create volcano plots for all comparisons in a DESeq2 object
 }
+\examples{
+\dontrun{
+all_plots <- create_all_volcano_plots(dds)
+}
+}

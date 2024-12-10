@@ -178,16 +178,6 @@ create_volcano_plot <- function(dds, result_name = NULL, title = NULL, condition
 #' @return A list of ggplot objects, one for each comparison
 #' @examples
 #' \dontrun{
-#' # For a single comparison:
-#' plot <- create_volcano_plot(dds, "treatment_vs_control")
-#'
-#' # For custom conditions:
-#' plot <- create_volcano_plot(dds, 
-#'                           result_name = "treatment_vs_control",
-#'                           condition_a = "Control",
-#'                           condition_b = "Treatment")
-#'
-#' # For all comparisons:
 #' all_plots <- create_all_volcano_plots(dds)
 #' }
 #' @export
@@ -199,16 +189,3 @@ create_all_volcano_plots <- function(dds, ...) {
   names(plots) <- result_names
   return(plots)
 }
-
-# Example usage:
-# For a single comparison:
-# plot <- create_volcano_plot(dds, "treatment_vs_control")
-
-# For custom conditions:
-# plot <- create_volcano_plot(dds, 
-#                           result_name = "treatment_vs_control",
-#                           condition_a = "Control",
-#                           condition_b = "Treatment")
-
-# For all comparisons:
-# all_plots <- create_all_volcano_plots(dds)

@@ -213,5 +213,3 @@ create_interactive_volcano_plot <- function(dds,
   
   return(hc)
 }
-
-create_interactive_volcano_plot(dds_rna, "Condition_R_vs_U", point_alpha = 0.3)
