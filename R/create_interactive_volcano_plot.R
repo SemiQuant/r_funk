@@ -36,13 +36,33 @@ create_interactive_volcano_plot <- function(dds,
     title <- result_name
   }
   
-  # Set conditions if not provided
+  # Extract conditions from result_name if not provided
   if (is.null(condition_a) || is.null(condition_b)) {
-    parts <- strsplit(result_name, "_vs_|_VS_")[[1]]
-    if (length(parts) >= 2) {
-      condition_b <- parts[1]
-      condition_a <- parts[2]
+    # Try different common separators
+    separators <- c("_vs_", "_VS_", " vs ", " VS ", "vs", "VS")
+    parts <- NULL
+    
+    for (sep in separators) {
+      if (grepl(sep, result_name, fixed = TRUE)) {
+        parts <- strsplit(result_name, sep, fixed = TRUE)[[1]]
+        break
+      }
+    }
+    
+    if (!is.null(parts) && length(parts) >= 2) {
+      # Clean up the parts by removing common prefixes/suffixes
+      clean_part <- function(x) {
+        x <- gsub("^condition_", "", x)
+        x <- gsub("^group_", "", x)
+        x <- gsub("^treatment_", "", x)
+        x <- trimws(x)
+        return(x)
+      }
+      
+      condition_b <- clean_part(parts[1])
+      condition_a <- clean_part(parts[2])
     } else {
+      # Fallback to generic names if parsing fails
       condition_a <- "Condition A"
       condition_b <- "Condition B"
     }
@@ -104,41 +124,41 @@ create_interactive_volcano_plot <- function(dds,
     )
   
   # Add annotations
-  hc <- hc %>%
-    hc_annotations(list(
-      labels = list(
-        list(
-          point = list(x = -x_max/2, y = annotation_y),
-          text = paste("Upregulated in", condition_a),
-          style = list(fontSize = "12px")
-        ),
-        list(
-          point = list(x = x_max/2, y = annotation_y),
-          text = paste("Upregulated in", condition_b),
-          style = list(fontSize = "12px")
-        )
-      ),
-      shapes = list(
-        # Left arrow
-        list(
-          type = "path",
-          points = list(
-            list(x = -effect_size_threshold, y = annotation_y * 0.98),
-            list(x = -x_max/2, y = annotation_y * 0.98)
-          ),
-          markerEnd = "arrow"
-        ),
-        # Right arrow
-        list(
-          type = "path",
-          points = list(
-            list(x = effect_size_threshold, y = annotation_y * 0.98),
-            list(x = x_max/2, y = annotation_y * 0.98)
-          ),
-          markerEnd = "arrow"
-        )
-      )
-    ))
+  # hc <- hc %>%
+  #   hc_annotations(list(
+  #     labels = list(
+  #       list(
+  #         point = list(x = -x_max/2, y = annotation_y),
+  #         text = paste("Upregulated in", condition_a),
+  #         style = list(fontSize = "12px")
+  #       ),
+  #       list(
+  #         point = list(x = x_max/2, y = annotation_y),
+  #         text = paste("Upregulated in", condition_b),
+  #         style = list(fontSize = "12px")
+  #       )
+  #     ),
+  #     shapes = list(
+  #       # Left arrow
+  #       list(
+  #         type = "path",
+  #         points = list(
+  #           list(x = -effect_size_threshold, y = annotation_y * 0.98),
+  #           list(x = -x_max/2, y = annotation_y * 0.98)
+  #         ),
+  #         markerEnd = "arrow"
+  #       ),
+  #       # Right arrow
+  #       list(
+  #         type = "path",
+  #         points = list(
+  #           list(x = effect_size_threshold, y = annotation_y * 0.98),
+  #           list(x = x_max/2, y = annotation_y * 0.98)
+  #         ),
+  #         markerEnd = "arrow"
+  #       )
+  #     )
+  #   ))
   
   # Plot each category separately with ggplot2-like colors
   # Not significant points
