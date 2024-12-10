@@ -137,32 +137,74 @@ create_signature_heatmaps <- function(vst_data, dds, result_names,
         current_hmap_data <- current_hmap_data[complete.cases(current_hmap_data), ]
         
         # Skip if no genes found
-        if (nrow(current_hmap_data) == 0) next
+        if (nrow(current_hmap_data) == 0) {
+            warning(sprintf("No valid genes found for signature %s", current_id))
+            next
+        }
         
+        # Check for infinite values and replace with NAs
+        current_hmap_data[is.infinite(current_hmap_data)] <- NA
+        
+        # Remove rows with all NAs
+        current_hmap_data <- current_hmap_data[rowSums(!is.na(current_hmap_data)) > 0, ]
+        
+        # Skip if no valid data remains
+        if (nrow(current_hmap_data) == 0) {
+            warning(sprintf("No valid data remains for signature %s after removing NA/Inf values", current_id))
+            next
+        }
+
         # Create row annotation for current genes
         row_annotation <- create_row_annotation(rownames(current_hmap_data), sig_results)
         
         # Create title
         plot_title <- sprintf("Gene Signature: %s", current_id)
         
-        # Create heatmap
-        hmap <- pheatmap::pheatmap(
-            current_hmap_data,
-            scale = scale,
-            show_rownames = TRUE,
-            annotation_col = annotation_col,
-            annotation_row = row_annotation,
-            annotation_colors = ann_colors,
-            fontsize_row = 8,
-            cluster_cols = TRUE,
-            cluster_rows = TRUE,
-            main = plot_title,
-            clustering_distance_rows = "correlation",
-            clustering_distance_cols = "correlation"
+        # Handle color palette for conditions
+        n_conditions <- length(unique(col_data[[condition_column]]))
+        color_palette <- if (n_conditions < 3) {
+            # For 2 or fewer conditions, use a simple color pair
+            c("#E41A1C", "#377EB8")[1:n_conditions]
+        } else {
+            RColorBrewer::brewer.pal(
+                n = min(n_conditions, 8),
+                name = "Dark2"
+            )
+        }
+        
+        # Update annotation colors
+        ann_colors <- list(
+            Condition = setNames(color_palette, 
+                               unique(col_data[[condition_column]]))
         )
         
-        # Store the heatmap
-        heatmap_list[[current_id]] <- hmap
+        for(result_name in result_names) {
+            ann_colors[[result_name]] <- c("TRUE" = "#5bf5a5", "FALSE" = "white")
+        }
+
+        # Create heatmap with tryCatch
+        tryCatch({
+            hmap <- pheatmap::pheatmap(
+                current_hmap_data,
+                scale = scale,
+                show_rownames = TRUE,
+                annotation_col = annotation_col,
+                annotation_row = row_annotation,
+                annotation_colors = ann_colors,
+                fontsize_row = 8,
+                cluster_cols = TRUE,
+                cluster_rows = TRUE,
+                main = plot_title,
+                clustering_distance_rows = "correlation",
+                clustering_distance_cols = "correlation"
+            )
+            
+            # Store the heatmap
+            heatmap_list[[current_id]] <- hmap
+        }, error = function(e) {
+            warning(sprintf("Failed to create heatmap for signature %s: %s", 
+                          current_id, e$message))
+        })
     }
     
     # Reset the plotting parameters
