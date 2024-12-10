@@ -26,7 +26,7 @@ create_interactive_volcano_plot <- function(dds,
                                           effect_size_threshold = 1,
                                           n_labels = 20,
                                           point_alpha = 0.4,
-                                          background_color = NULL) {
+                                          background_color = "#FFFFFF") {
   
   # Get results
   deseq_result <- results(dds, name = result_name)

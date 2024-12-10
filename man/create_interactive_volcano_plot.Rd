@@ -14,7 +14,7 @@ create_interactive_volcano_plot(
   effect_size_threshold = 1,
   n_labels = 20,
   point_alpha = 0.4,
-  background_color = NULL
+  background_color = "#FFFFFF"
 )
 }
 \arguments{
