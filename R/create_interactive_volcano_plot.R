@@ -9,6 +9,7 @@
 #' @param effect_size_threshold Log2 fold change threshold (default: 1)
 #' @param n_labels Number of top genes to label (default: 20)
 #' @param point_alpha Transparency of points (0-1) (default: 0.4)
+#' @param background_color Background color for the plot (default: NULL for transparent)
 #' 
 #' @return A highcharter object
 #' @export
@@ -24,7 +25,8 @@ create_interactive_volcano_plot <- function(dds,
                                           p_value_threshold = 0.05,
                                           effect_size_threshold = 1,
                                           n_labels = 20,
-                                          point_alpha = 0.4) {
+                                          point_alpha = 0.4,
+                                          background_color = NULL) {
   
   # Get results
   deseq_result <- results(dds, name = result_name)
@@ -74,7 +76,11 @@ create_interactive_volcano_plot <- function(dds,
   
   # Create the base plot
   hc <- highchart() %>%
-    hc_chart(type = "scatter", zoomType = "xy") %>%
+    hc_chart(
+      type = "scatter", 
+      zoomType = "xy",
+      backgroundColor = background_color
+    ) %>%
     hc_title(text = title) %>%
     hc_xAxis(
       title = list(text = "Effect Size (log2FC)"),

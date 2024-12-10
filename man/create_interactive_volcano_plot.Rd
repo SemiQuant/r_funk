@@ -13,7 +13,8 @@ create_interactive_volcano_plot(
   p_value_threshold = 0.05,
   effect_size_threshold = 1,
   n_labels = 20,
-  point_alpha = 0.4
+  point_alpha = 0.4,
+  background_color = NULL
 )
 }
 \arguments{
@@ -34,6 +35,8 @@ create_interactive_volcano_plot(
 \item{n_labels}{Number of top genes to label (default: 20)}
 
 \item{point_alpha}{Transparency of points (0-1) (default: 0.4)}
+
+\item{background_color}{Background color for the plot (default: NULL for transparent)}
 }
 \value{
 A highcharter object
