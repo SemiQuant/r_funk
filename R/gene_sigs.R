@@ -186,6 +186,19 @@ create_signature_heatmaps <- function(vst_data, dds, result_names,
 
         # Create heatmap with tryCatch
         tryCatch({
+            # Prepare data for clustering
+            # Use pairwise complete observations for correlation distance
+            clustering_data <- current_hmap_data
+            
+            # Calculate row distances handling NAs
+            row_dist <- as.dist(1 - cor(t(clustering_data), 
+                                      use = "pairwise.complete.obs"))
+            
+            # Calculate column distances handling NAs
+            col_dist <- as.dist(1 - cor(clustering_data, 
+                                      use = "pairwise.complete.obs"))
+            
+            # Create heatmap with pre-calculated distances
             hmap <- pheatmap::pheatmap(
                 current_hmap_data,
                 scale = scale,
@@ -197,8 +210,8 @@ create_signature_heatmaps <- function(vst_data, dds, result_names,
                 cluster_cols = TRUE,
                 cluster_rows = TRUE,
                 main = plot_title,
-                clustering_distance_rows = "correlation",
-                clustering_distance_cols = "correlation"
+                clustering_distance_rows = row_dist,
+                clustering_distance_cols = col_dist
             )
             
             # Store the heatmap
@@ -206,6 +219,28 @@ create_signature_heatmaps <- function(vst_data, dds, result_names,
         }, error = function(e) {
             warning(sprintf("Failed to create heatmap for signature %s: %s", 
                           current_id, e$message))
+            
+            # Try without clustering if distance calculation fails
+            tryCatch({
+                hmap <- pheatmap::pheatmap(
+                    current_hmap_data,
+                    scale = scale,
+                    show_rownames = TRUE,
+                    annotation_col = annotation_col,
+                    annotation_row = row_annotation,
+                    annotation_colors = ann_colors,
+                    fontsize_row = 8,
+                    cluster_cols = FALSE,
+                    cluster_rows = FALSE,
+                    main = paste(plot_title, "(unclustered)"),
+                )
+                
+                # Store the unclustered heatmap
+                heatmap_list[[current_id]] <- hmap
+            }, error = function(e2) {
+                warning(sprintf("Failed to create unclustered heatmap for signature %s: %s", 
+                              current_id, e2$message))
+            })
         })
     }
     
