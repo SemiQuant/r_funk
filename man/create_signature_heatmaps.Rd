@@ -13,7 +13,10 @@ create_signature_heatmaps(
   n_signatures = NULL,
   padj_threshold = 0.05,
   scale = "row",
-  condition_column = "Condition"
+  condition_column = "Condition",
+  lfc_threshold = NULL,
+  prefilter_padj = NULL,
+  prefilter_lfc = NULL
 )
 }
 \arguments{
@@ -36,6 +39,12 @@ If NULL (default), uses the package's built-in gene signatures dataset}
 the "row" direction or "column" direction, or "none" (default: "row")}
 
 \item{condition_column}{Name of the condition column in colData(dds) (default: "Condition")}
+
+\item{lfc_threshold}{Log2 fold change threshold for filtering (default: NULL)}
+
+\item{prefilter_padj}{Adjusted p-value threshold for pre-filtering (default: NULL)}
+
+\item{prefilter_lfc}{Log2 fold change threshold for pre-filtering (default: NULL)}
 }
 \value{
 A list of pheatmap objects

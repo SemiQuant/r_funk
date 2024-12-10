@@ -11,6 +11,9 @@
 #' @param signature_id Optional specific signature ID to plot (default: NULL, plots all)
 #' @param n_signatures Optional number of signatures to plot (default: NULL, plots all)
 #' @param padj_threshold Adjusted p-value threshold for significance (default: 0.05)
+#' @param lfc_threshold Log2 fold change threshold for filtering (default: NULL)
+#' @param prefilter_padj Adjusted p-value threshold for pre-filtering (default: NULL)
+#' @param prefilter_lfc Log2 fold change threshold for pre-filtering (default: NULL)
 #' @param scale Character indicating if the values should be centered and scaled in either
 #'        the "row" direction or "column" direction, or "none" (default: "row")
 #' @param condition_column Name of the condition column in colData(dds) (default: "Condition")
@@ -34,7 +37,10 @@ create_signature_heatmaps <- function(vst_data, dds, result_names,
                                     signatures_file = NULL,
                                     signature_id = NULL, n_signatures = NULL,
                                     padj_threshold = 0.05, scale = "row",
-                                    condition_column = "Condition") {
+                                    condition_column = "Condition",
+                                    lfc_threshold = NULL,
+                                    prefilter_padj = NULL,
+                                    prefilter_lfc = NULL) {
     # Get gene signatures
     if (is.null(signatures_file)) {
         gene_symbols_df <- gene_signatures
@@ -48,11 +54,55 @@ create_signature_heatmaps <- function(vst_data, dds, result_names,
             dplyr::filter(ID %in% signature_id)
     }
     
-    # Get significant genes for each comparison
+    # Get significant genes for each comparison and apply prefiltering if specified
     sig_results <- list()
+    filtered_genes <- NULL
+    
     for(result_name in result_names) {
         res <- DESeq2::results(dds, name = result_name)
-        sig_results[[result_name]] <- rownames(res)[which(res$padj < padj_threshold)]
+        
+        # Basic significance filtering
+        sig_genes <- rownames(res)[which(res$padj < padj_threshold)]
+        
+        # Add LFC threshold if specified
+        if (!is.null(lfc_threshold)) {
+            sig_genes <- rownames(res)[which(res$padj < padj_threshold & 
+                                           abs(res$log2FoldChange) > lfc_threshold)]
+        }
+        
+        sig_results[[result_name]] <- sig_genes
+        
+        # Apply prefiltering if specified
+        if (!is.null(prefilter_padj) || !is.null(prefilter_lfc)) {
+            prefiltered <- rownames(res)
+            
+            if (!is.null(prefilter_padj)) {
+                prefiltered <- rownames(res)[which(res$padj < prefilter_padj)]
+            }
+            
+            if (!is.null(prefilter_lfc)) {
+                prefiltered <- intersect(
+                    prefiltered,
+                    rownames(res)[which(abs(res$log2FoldChange) > prefilter_lfc)]
+                )
+            }
+            
+            if (is.null(filtered_genes)) {
+                filtered_genes <- prefiltered
+            } else {
+                filtered_genes <- union(filtered_genes, prefiltered)
+            }
+        }
+    }
+    
+    # Apply prefiltering to gene_symbols_df if filtered_genes is not NULL
+    if (!is.null(filtered_genes)) {
+        gene_symbols_df <- gene_symbols_df %>%
+            dplyr::filter(Symbol %in% filtered_genes)
+        
+        if (nrow(gene_symbols_df) == 0) {
+            stop("No genes remain after prefiltering. Consider relaxing the prefiltering thresholds.")
+        }
     }
     
     # Create row annotation for significant genes
