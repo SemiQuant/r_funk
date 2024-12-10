@@ -99,7 +99,15 @@ create_interactive_volcano_plot <- function(dds,
     hc_chart(
       type = "scatter", 
       zoomType = "xy",
-      backgroundColor = background_color
+      backgroundColor = list(
+        linearGradient = c(0, 0, 0, 0),
+        stops = list(
+          list(0, background_color)
+        )
+      ),
+      style = list(
+        fontFamily = "Arial, Helvetica, sans-serif"
+      )
     ) %>%
     hc_title(text = title) %>%
     hc_xAxis(
