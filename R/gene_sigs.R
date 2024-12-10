@@ -143,10 +143,12 @@ create_signature_heatmaps <- function(vst_data, dds, result_names,
         }
         
         # Check for infinite values and replace with NAs
-        current_hmap_data[is.infinite(current_hmap_data)] <- NA
+        # Convert to matrix first to handle infinite values properly
+        current_hmap_data <- as.matrix(current_hmap_data)
+        current_hmap_data[!is.finite(current_hmap_data)] <- NA
         
         # Remove rows with all NAs
-        current_hmap_data <- current_hmap_data[rowSums(!is.na(current_hmap_data)) > 0, ]
+        current_hmap_data <- current_hmap_data[rowSums(!is.na(current_hmap_data)) > 0, , drop = FALSE]
         
         # Skip if no valid data remains
         if (nrow(current_hmap_data) == 0) {
