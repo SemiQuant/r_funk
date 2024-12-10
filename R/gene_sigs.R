@@ -206,8 +206,12 @@ create_signature_heatmaps <- function(vst_data, dds, result_names,
             next
         }
 
-        # Create row annotation for current genes
-        row_annotation <- create_row_annotation(rownames(current_hmap_data), sig_results)
+        # Create row annotation for current genes only if no prefiltering is applied
+        row_annotation <- if (is.null(prefilter_padj) && is.null(prefilter_lfc)) {
+            create_row_annotation(rownames(current_hmap_data), sig_results)
+        } else {
+            NULL
+        }
         
         # Create title
         plot_title <- sprintf("Gene Signature: %s", current_id)
@@ -230,8 +234,11 @@ create_signature_heatmaps <- function(vst_data, dds, result_names,
                                unique(col_data[[condition_column]]))
         )
         
-        for(result_name in result_names) {
-            ann_colors[[result_name]] <- c("TRUE" = "#5bf5a5", "FALSE" = "white")
+        # Add significance colors only if no prefiltering
+        if (is.null(prefilter_padj) && is.null(prefilter_lfc)) {
+            for(result_name in result_names) {
+                ann_colors[[result_name]] <- c("TRUE" = "#5bf5a5", "FALSE" = "white")
+            }
         }
 
         # Create heatmap with tryCatch
@@ -268,7 +275,7 @@ create_signature_heatmaps <- function(vst_data, dds, result_names,
                 scale = scale,
                 show_rownames = TRUE,
                 annotation_col = annotation_col,
-                annotation_row = row_annotation,
+                annotation_row = row_annotation,  # Will be NULL if prefiltering is applied
                 annotation_colors = ann_colors,
                 fontsize_row = 8,
                 cluster_cols = TRUE,
