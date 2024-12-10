@@ -273,12 +273,7 @@ create_signature_heatmaps <- function(vst_data, dds, result_names,
                 fontsize_row = 8,
                 cluster_cols = TRUE,
                 cluster_rows = TRUE,
-                main = plot_title,
-                clustering_method = "complete",
-                clustering = list(
-                    Gene = row_hclust,
-                    Sample = col_hclust
-                )
+                main = plot_title
             )
             
             # Store the heatmap
