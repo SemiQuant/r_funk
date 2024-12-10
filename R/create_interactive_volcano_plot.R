@@ -5,10 +5,10 @@
 #' @param title Custom title for the plot
 #' @param condition_a Name of condition A
 #' @param condition_b Name of condition B
-#' @param p_value_threshold P-value threshold for significance
-#' @param effect_size_threshold Log2 fold change threshold
-#' @param n_labels Number of top genes to label
-#' @param point_alpha Transparency of points (0-1)
+#' @param p_value_threshold P-value threshold for significance (default: 0.05)
+#' @param effect_size_threshold Log2 fold change threshold (default: 1)
+#' @param n_labels Number of top genes to label (default: 20)
+#' @param point_alpha Transparency of points (0-1) (default: 0.4)
 #' 
 #' @return A highcharter object
 #' @export
@@ -16,7 +16,15 @@
 #' @importFrom highcharter highchart hc_add_series hc_xAxis hc_yAxis hc_title hc_tooltip hc_plotOptions hc_annotations
 #' @importFrom DESeq2 results resultsNames
 #' 
-create_interactive_volcano_plot <- function(dds, result_name = NULL, title = NULL, ...) {
+create_interactive_volcano_plot <- function(dds, 
+                                          result_name = NULL, 
+                                          title = NULL, 
+                                          condition_a = NULL,
+                                          condition_b = NULL,
+                                          p_value_threshold = 0.05,
+                                          effect_size_threshold = 1,
+                                          n_labels = 20,
+                                          point_alpha = 0.4) {
   
   # Get results
   deseq_result <- results(dds, name = result_name)
