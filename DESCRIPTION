@@ -26,6 +26,8 @@ Imports:
     pheatmap,
     RColorBrewer,
     readxl,
-    grid
+    grid,
+    highcharter,
+    magrittr
 Depends: 
     R (>= 3.5)
