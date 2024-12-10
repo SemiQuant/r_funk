@@ -187,18 +187,32 @@ create_signature_heatmaps <- function(vst_data, dds, result_names,
         # Create heatmap with tryCatch
         tryCatch({
             # Prepare data for clustering
-            # Use pairwise complete observations for correlation distance
             clustering_data <- current_hmap_data
             
-            # Calculate row distances handling NAs
-            row_dist <- as.dist(1 - cor(t(clustering_data), 
-                                      use = "pairwise.complete.obs"))
+            # Scale the data if requested (before clustering)
+            if (scale == "row") {
+                clustering_data <- t(scale(t(clustering_data)))
+            } else if (scale == "column") {
+                clustering_data <- scale(clustering_data)
+            }
             
-            # Calculate column distances handling NAs
-            col_dist <- as.dist(1 - cor(clustering_data, 
-                                      use = "pairwise.complete.obs"))
+            # Handle NAs in correlation calculation
+            row_cor <- cor(t(clustering_data), use = "pairwise.complete.obs")
+            col_cor <- cor(clustering_data, use = "pairwise.complete.obs")
             
-            # Create heatmap with pre-calculated distances
+            # Replace any remaining NAs with 0 correlation
+            row_cor[is.na(row_cor)] <- 0
+            col_cor[is.na(col_cor)] <- 0
+            
+            # Convert correlations to distances
+            row_dist <- as.dist(1 - row_cor)
+            col_dist <- as.dist(1 - col_cor)
+            
+            # Create hierarchical clustering objects
+            row_hclust <- hclust(row_dist, method = "complete")
+            col_hclust <- hclust(col_dist, method = "complete")
+            
+            # Create heatmap with pre-calculated clustering
             hmap <- pheatmap::pheatmap(
                 current_hmap_data,
                 scale = scale,
@@ -210,14 +224,17 @@ create_signature_heatmaps <- function(vst_data, dds, result_names,
                 cluster_cols = TRUE,
                 cluster_rows = TRUE,
                 main = plot_title,
-                clustering_distance_rows = row_dist,
-                clustering_distance_cols = col_dist
+                clustering_method = "complete",
+                clustering = list(
+                    Gene = row_hclust,
+                    Sample = col_hclust
+                )
             )
             
             # Store the heatmap
             heatmap_list[[current_id]] <- hmap
         }, error = function(e) {
-            warning(sprintf("Failed to create heatmap for signature %s: %s", 
+            warning(sprintf("Failed to create clustered heatmap for signature %s: %s", 
                           current_id, e$message))
             
             # Try without clustering if distance calculation fails
