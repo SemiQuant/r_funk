@@ -17,6 +17,8 @@
 #' @param scale Character indicating if the values should be centered and scaled in either
 #'        the "row" direction or "column" direction, or "none" (default: "row")
 #' @param condition_column Name of the condition column in colData(dds) (default: "Condition")
+#' @param perform_gsea Logical indicating whether to perform GSEA analysis (default: FALSE)
+#' @param gsea_nperm Deprecated. Number of permutations is now automatically determined by fgseaMultilevel
 #'
 #' @return A list of pheatmap objects
 #' @export
@@ -26,6 +28,9 @@
 #' @importFrom dplyr filter distinct pull select
 #' @importFrom SummarizedExperiment assay colData
 #' @importFrom DESeq2 results
+#' @importFrom fgsea fgsea
+#' @importFrom stats p.adjust
+#' @importFrom DT datatable
 #'
 #' @examples
 #' \dontrun{
@@ -40,7 +45,9 @@ create_signature_heatmaps <- function(vst_data, dds, result_names,
                                     condition_column = "Condition",
                                     lfc_threshold = NULL,
                                     prefilter_padj = NULL,
-                                    prefilter_lfc = NULL) {
+                                    prefilter_lfc = NULL,
+                                    perform_gsea = FALSE,
+                                    gsea_nperm = 1000) {
     # Get gene signatures
     if (is.null(signatures_file)) {
         gene_symbols_df <- gene_signatures
@@ -218,14 +225,15 @@ create_signature_heatmaps <- function(vst_data, dds, result_names,
         
         # Handle color palette for conditions
         n_conditions <- length(unique(col_data[[condition_column]]))
-        color_palette <- if (n_conditions < 3) {
+        color_palette <- if (n_conditions <= 2) {
             # For 2 or fewer conditions, use a simple color pair
             c("#E41A1C", "#377EB8")[1:n_conditions]
+        } else if (n_conditions <= 8) {
+            # For 3-8 conditions, use Dark2
+            RColorBrewer::brewer.pal(n_conditions, "Dark2")
         } else {
-            RColorBrewer::brewer.pal(
-                n = min(n_conditions, 8),
-                name = "Dark2"
-            )
+            # For more than 8 conditions, interpolate colors
+            colorRampPalette(RColorBrewer::brewer.pal(8, "Dark2"))(n_conditions)
         }
         
         # Update annotation colors
@@ -316,7 +324,55 @@ create_signature_heatmaps <- function(vst_data, dds, result_names,
     # Reset the plotting parameters
     graphics::par(mfrow = c(1, 1))
     
-    return(invisible(heatmap_list))
+    # After creating sig_results, add GSEA analysis
+    gsea_results <- list()
+    if (perform_gsea) {
+        for(result_name in result_names) {
+            res <- DESeq2::results(dds, name = result_name)
+            
+            # Create ranked gene list for GSEA more efficiently
+            gene_ranks <- with(as.data.frame(res), {
+                ranks <- -log10(pvalue) * sign(log2FoldChange)
+                ranks <- ranks[!is.na(ranks)]
+                ranks <- sort(ranks, decreasing = TRUE)  # Pre-sort to help fgsea
+                ranks
+            })
+            
+            # Create gene sets more efficiently
+            gene_sets <- split(gene_symbols_df$Symbol, gene_symbols_df$ID)
+            
+            # Run GSEA with memory-efficient settings
+            gsea_result <- tryCatch({
+                fgsea::fgseaMultilevel(
+                    pathways = gene_sets,
+                    stats = gene_ranks,
+                    minSize = 1,
+                    maxSize = 500,  # Limit maximum gene set size
+                    eps = 0.0,      # Disable approximate p-values
+                    nPermSimple = 1000  # Limit number of permutations
+                )
+            }, error = function(e) {
+                warning(sprintf("GSEA failed for %s: %s", result_name, e$message))
+                return(NULL)
+            })
+            
+            if (!is.null(gsea_result)) {
+                gsea_results[[result_name]] <- gsea_result
+            }
+            
+            # Clean up to free memory
+            rm(gene_ranks, gsea_result)
+            gc()
+        }
+    }
+
+    # Return results
+    result <- list(
+        heatmaps = heatmap_list,
+        gsea_results = if (perform_gsea) gsea_results else NULL
+    )
+
+    return(invisible(result))
 }
 
 #' List Available Gene Signatures

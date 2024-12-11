@@ -6,3 +6,4 @@ gene_signatures <- as.data.frame(gene_signatures)
 
 # Save as internal data
 usethis::use_data(gene_signatures, internal = FALSE, overwrite = TRUE)
+

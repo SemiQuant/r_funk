@@ -30,6 +30,7 @@ Imports:
     highcharter,
     magrittr,
     writexl,
-    shiny
+    shiny,
+    fgsea
 Depends: 
     R (>= 3.5)

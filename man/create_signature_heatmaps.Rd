@@ -16,7 +16,9 @@ create_signature_heatmaps(
   condition_column = "Condition",
   lfc_threshold = NULL,
   prefilter_padj = NULL,
-  prefilter_lfc = NULL
+  prefilter_lfc = NULL,
+  perform_gsea = FALSE,
+  gsea_nperm = 1000
 )
 }
 \arguments{
@@ -45,6 +47,10 @@ the "row" direction or "column" direction, or "none" (default: "row")}
 \item{prefilter_padj}{Adjusted p-value threshold for pre-filtering (default: NULL)}
 
 \item{prefilter_lfc}{Log2 fold change threshold for pre-filtering (default: NULL)}
+
+\item{perform_gsea}{Logical indicating whether to perform GSEA analysis (default: FALSE)}
+
+\item{gsea_nperm}{Deprecated. Number of permutations is now automatically determined by fgseaMultilevel}
 }
 \value{
 A list of pheatmap objects
