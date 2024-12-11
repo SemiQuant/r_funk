@@ -10,7 +10,8 @@ create_interactive_datatable(
   expandable_cols = c(8, 9, 10),
   only_sig = FALSE,
   round_cols = c("log2FoldChange", "lfcSE", "stat", "pvalue", "padj"),
-  digits = 3
+  digits = 3,
+  show_table = TRUE
 )
 }
 \arguments{
@@ -25,6 +26,9 @@ create_interactive_datatable(
 (default: c("log2FoldChange", "lfcSE", "stat", "pvalue", "padj"))}
 
 \item{digits}{Integer specifying the number of decimal places for rounding (default: 3)}
+
+\item{show_table}{Logical indicating whether to display the table (default: TRUE).
+If FALSE, only shows the Excel download button.}
 }
 \value{
 A DT::datatable object with interactive features
@@ -38,8 +42,8 @@ The function implements several features:
 \itemize{
 \item Expandable text columns with "More/Less" buttons
 \item Excel export functionality
-\item Column filtering
-\item Virtual scrolling for performance
+\item Column filtering (when show_table = TRUE)
+\item Virtual scrolling for performance (when show_table = TRUE)
 \item Automatic number formatting
 }
 }
