@@ -28,6 +28,8 @@ Imports:
     readxl,
     grid,
     highcharter,
-    magrittr
+    magrittr,
+    writexl,
+    shiny
 Depends: 
     R (>= 3.5)
