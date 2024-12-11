@@ -326,20 +326,53 @@ create_signature_heatmaps <- function(vst_data, dds, result_names,
     
     # After creating sig_results, add GSEA analysis
     gsea_results <- list()
+    gsea_formatted <- NULL
     if (perform_gsea) {
         for(result_name in result_names) {
+            message(sprintf("Running GSEA for %s", result_name))
             res <- DESeq2::results(dds, name = result_name)
             
-            # Create ranked gene list for GSEA more efficiently
-            gene_ranks <- with(as.data.frame(res), {
-                ranks <- -log10(pvalue) * sign(log2FoldChange)
-                ranks <- ranks[!is.na(ranks)]
-                ranks <- sort(ranks, decreasing = TRUE)  # Pre-sort to help fgsea
-                ranks
+            # Create ranked gene list for GSEA using only log2FoldChange
+            gene_ranks <- tryCatch({
+                res_df <- as.data.frame(res)
+                # Remove any rows with NA values in log2FoldChange
+                res_df <- res_df[!is.na(res_df$log2FoldChange) & 
+                                is.finite(res_df$log2FoldChange), ]
+                
+                # Use log2FoldChange as ranking metric
+                ranks <- res_df$log2FoldChange
+                names(ranks) <- rownames(res_df)
+                
+                # Sort ranks
+                sort(ranks, decreasing = TRUE)
+            }, error = function(e) {
+                warning(sprintf("Failed to create gene ranks for %s: %s", 
+                              result_name, e$message))
+                return(NULL)
             })
+            
+            if (is.null(gene_ranks)) next
+            
+            # Debug info
+            message(sprintf("Number of ranked genes: %d", length(gene_ranks)))
             
             # Create gene sets more efficiently
             gene_sets <- split(gene_symbols_df$Symbol, gene_symbols_df$ID)
+            
+            # Debug info
+            message(sprintf("Number of gene sets: %d", length(gene_sets)))
+            message(sprintf("Gene set sizes: %s", 
+                          paste(sapply(gene_sets, length), collapse = ", ")))
+            
+            # Ensure gene symbols match
+            common_genes <- intersect(names(gene_ranks), unlist(gene_sets))
+            if (length(common_genes) == 0) {
+                warning(sprintf("No overlap between ranked genes and signature genes for %s", 
+                              result_name))
+                next
+            }
+            
+            message(sprintf("Number of common genes: %d", length(common_genes)))
             
             # Run GSEA with memory-efficient settings
             gsea_result <- tryCatch({
@@ -347,29 +380,75 @@ create_signature_heatmaps <- function(vst_data, dds, result_names,
                     pathways = gene_sets,
                     stats = gene_ranks,
                     minSize = 1,
-                    maxSize = 500,  # Limit maximum gene set size
-                    eps = 0.0,      # Disable approximate p-values
-                    nPermSimple = 1000  # Limit number of permutations
+                    maxSize = 500,
+                    eps = 0.0,
+                    nPermSimple = 1000
                 )
             }, error = function(e) {
                 warning(sprintf("GSEA failed for %s: %s", result_name, e$message))
                 return(NULL)
             })
             
-            if (!is.null(gsea_result)) {
+            if (!is.null(gsea_result) && nrow(gsea_result) > 0) {
+                # Add comparison name to results
+                gsea_result <- cbind(Comparison = result_name, gsea_result)
+                
+                # Store raw results
                 gsea_results[[result_name]] <- gsea_result
+                
+                # Append to combined formatted results
+                if (is.null(gsea_formatted)) {
+                    gsea_formatted <- gsea_result
+                } else {
+                    gsea_formatted <- rbind(gsea_formatted, gsea_result)
+                }
+                
+                message(sprintf("GSEA completed for %s with %d results", 
+                              result_name, nrow(gsea_result)))
+            } else {
+                warning(sprintf("No significant GSEA results for %s", result_name))
             }
+        }
+        
+        # Format the combined results if any exist
+        if (!is.null(gsea_formatted) && nrow(gsea_formatted) > 0) {
+            gsea_formatted <- gsea_formatted %>%
+                dplyr::mutate(
+                    pval = formatC(pval, format = "e", digits = 2),
+                    padj = formatC(padj, format = "e", digits = 2),
+                    log2err = round(log2err, 3),
+                    ES = round(ES, 3),
+                    NES = round(NES, 3),
+                    leadingEdge = sapply(leadingEdge, paste, collapse = ", ")
+                )
             
-            # Clean up to free memory
-            rm(gene_ranks, gsea_result)
-            gc()
+            # Create interactive datatable
+            gsea_table <- DT::datatable(gsea_formatted,
+                options = list(
+                    pageLength = 10,
+                    scrollX = TRUE,
+                    dom = 'Bfrtip'
+                ),
+                filter = 'top',
+                class = 'cell-border stripe'
+            ) %>%
+                DT::formatStyle(
+                    columns = c('ES', 'NES'),
+                    backgroundColor = DT::styleInterval(
+                        c(0),
+                        c('#FFC4C4', '#C4FFC4')
+                    )
+                )
+        } else {
+            gsea_table <- NULL
         }
     }
 
     # Return results
     result <- list(
         heatmaps = heatmap_list,
-        gsea_results = if (perform_gsea) gsea_results else NULL
+        gsea_results = if (perform_gsea) gsea_results else NULL,
+        gsea_table = if (perform_gsea) gsea_table else NULL
     )
 
     return(invisible(result))
