@@ -28,8 +28,25 @@ create_interactive_volcano_plot <- function(dds,
                                           point_alpha = 0.4,
                                           background_color = "#FFFFFF") {
   
-  # Get results
-  deseq_result <- results(dds, name = result_name)
+  # Handle different types of result specification
+  if (is.list(result_name)) {
+    # Case for list contrast (e.g., M vs R from M vs U - R vs U)
+    deseq_result <- results(dds, contrast = result_name)
+    if (is.null(title)) {
+      title <- "Contrast Comparison"
+    }
+    if (is.null(condition_a) || is.null(condition_b)) {
+      # Try to extract conditions from the contrast names
+      contrast_names <- unlist(result_name)
+      parts1 <- strsplit(contrast_names[1], "_vs_|_VS_")[[1]]
+      parts2 <- strsplit(contrast_names[2], "_vs_|_VS_")[[1]]
+      condition_a <- tail(parts1, 1)  # Last part of first contrast
+      condition_b <- tail(parts2, 1)  # Last part of second contrast
+    }
+  } else {
+    # Original behavior for name-based results
+    deseq_result <- results(dds, name = result_name)
+  }
   
   # Set title if not provided
   if (is.null(title)) {
