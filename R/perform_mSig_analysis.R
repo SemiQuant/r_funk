@@ -18,6 +18,8 @@
 #' @param ranking_method Character string specifying the ranking method to use:
 #'        "auto" (automatically choose based on available data),
 #'        "stat" (use raw test statistic),
+#'        "logfc" (use log fold change),
+#'        "logfc_pval" (combine log fold change with p-value significance),
 #'        "combined" (combine p-value and effect size),
 #'        "expression" (incorporate expression level) (default: "auto")
 #' @param handle_ties Logical indicating whether to automatically handle ties
@@ -88,8 +90,8 @@ perform_mSig_analysis <- function(results_df, title, p_cutoff = 0.05,
     if (!genome %in% c("mmu", "hsa")) {
         stop("genome must be either 'mmu' for mouse or 'hsa' for human")
     }
-    if (!ranking_method %in% c("auto", "stat", "combined", "expression")) {
-        stop("ranking_method must be one of: 'auto', 'stat', 'combined', 'expression'")
+    if (!ranking_method %in% c("auto", "stat", "logfc", "logfc_pval", "combined", "expression")) {
+        stop("ranking_method must be one of: 'auto', 'stat', 'logfc', 'logfc_pval', 'combined', 'expression'")
     }
     
     # Check for required packages
@@ -144,6 +146,19 @@ perform_mSig_analysis <- function(results_df, title, p_cutoff = 0.05,
             
             ranking <- switch(method,
                 "stat" = df$stat,
+                "logfc" = {
+                    if (!"log2FoldChange" %in% names(df)) {
+                        stop("log2FoldChange column required for logfc ranking method")
+                    }
+                    df$log2FoldChange
+                },
+                "logfc_pval" = {
+                    if (!all(c("log2FoldChange", "padj") %in% names(df))) {
+                        stop("Both log2FoldChange and padj columns required for logfc_pval ranking method")
+                    }
+                    # Combine log fold change with signed -log10(padj)
+                    df$log2FoldChange * -log10(pmax(df$padj, 1e-10))
+                },
                 "combined" = {
                     # Combine p-value and effect size
                     -log10(pmax(df$padj, 1e-10)) * sign(df$stat)

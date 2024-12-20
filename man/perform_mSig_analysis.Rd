@@ -42,6 +42,8 @@ required columns: gene_symbol (or gene_id) and stat}
 \item{ranking_method}{Character string specifying the ranking method to use:
 "auto" (automatically choose based on available data),
 "stat" (use raw test statistic),
+"logfc" (use log fold change),
+"logfc_pval" (combine log fold change with p-value significance),
 "combined" (combine p-value and effect size),
 "expression" (incorporate expression level) (default: "auto")}
 
