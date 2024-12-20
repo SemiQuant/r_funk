@@ -66,10 +66,10 @@
 #'   padj = c(0.01, 0.03, 0.02),
 #'   stat = c(1.5, -2.0, 2.5)
 #' )
-#' msig_results <- perform_gsea_analysis(results_df, "Treatment vs Control")
+#' msig_results <- perform_mSig_analysis(results_df, "Treatment vs Control")
 #' 
 #' @export
-perform_gsea_analysis <- function(results_df, title, p_cutoff = 0.05, 
+perform_mSig_analysis <- function(results_df, title, p_cutoff = 0.05, 
                                 genome = "mmu", category = "H",
                                 min_size = 15, max_size = 500,
                                 eps = 0, nPermSimple = 1000,
