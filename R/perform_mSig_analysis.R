@@ -121,8 +121,17 @@ perform_mSig_analysis <- function(results_df, title, p_cutoff = 0.05,
             stop("Missing required column: gene_id or gene_symbol")
         }
         
-        if (!"stat" %in% names(results_df)) {
-            stop("Missing required column: stat")
+        # Check for required columns based on ranking method
+        if (ranking_method == "logfc") {
+            if (!"log2FoldChange" %in% names(results_df)) {
+                stop("Missing required column: log2FoldChange (needed for logfc ranking method)")
+            }
+        } else if (ranking_method == "logfc_pval") {
+            if (!all(c("log2FoldChange", "padj") %in% names(results_df))) {
+                stop("Missing required columns: log2FoldChange and padj (needed for logfc_pval ranking method)")
+            }
+        } else if (!"stat" %in% names(results_df)) {
+            stop("Missing required column: stat (needed for stat-based ranking methods)")
         }
         
         # Check for additional ranking metrics
@@ -150,6 +159,7 @@ perform_mSig_analysis <- function(results_df, title, p_cutoff = 0.05,
                     if (!"log2FoldChange" %in% names(df)) {
                         stop("log2FoldChange column required for logfc ranking method")
                     }
+                    # For logfc method, we'll use log2FoldChange directly
                     df$log2FoldChange
                 },
                 "logfc_pval" = {
