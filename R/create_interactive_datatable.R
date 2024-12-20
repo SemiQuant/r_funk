@@ -121,30 +121,34 @@ create_interactive_datatable <- function(df, caption_text, expandable_cols = c(8
     return(dt)
     
   } else {
-    # First create and save the Excel file with the actual data
-    filename <- paste0(caption_text, '_data.xlsx')
+    # Create a unique filename using timestamp
+    timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
+    safe_caption <- gsub("[^[:alnum:]]", "_", caption_text) # Remove special characters
+    filename <- file.path(tempdir(), paste0(safe_caption, "_", timestamp, ".xlsx"))
+    
+    # Create and save the Excel file with the actual data
     writexl::write_xlsx(df, filename)
     
     # Then create minimal table with only download button
     dt <- DT::datatable(
-      data.frame("Click 'Download Excel' to download the data" = character(0)),  # empty dataframe with better message
+      data.frame("Click 'Download Excel' to download the data" = character(0)),
       extensions = 'Buttons',
       options = list(
-        dom = 'B',  # Show only buttons
+        dom = 'B',
         buttons = list(
           list(
             extend = 'excel',
             text = 'Download Excel',
-            filename = paste0(caption_text, '_data'),
+            filename = paste0(safe_caption, "_", timestamp),
             action = htmlwidgets::JS(sprintf(
               "function(e, dt, button, config) {
                 window.location.href = '%s';
               }", filename))
           )
         ),
-        paging = FALSE,     # Disable paging
-        info = FALSE,       # Disable info
-        searching = FALSE,  # Disable search
+        paging = FALSE,
+        info = FALSE,
+        searching = FALSE,
         language = list(
           emptyTable = "Table not shown - use download button above to download the complete dataset"
         )
