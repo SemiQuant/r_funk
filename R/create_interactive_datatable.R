@@ -123,10 +123,15 @@ create_interactive_datatable <- function(df, caption_text, expandable_cols = c(8
     return(dt)
     
   } else {
+    # Create data directory if it doesn't exist
+    if (!dir.exists("data")) {
+      dir.create("data")
+    }
+    
     # Create a unique filename using timestamp
     timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
     safe_caption <- gsub("[^[:alnum:]]", "_", caption_text) # Remove special characters
-    filename <- paste0(safe_caption, "_", timestamp, ".xlsx")
+    filename <- file.path("data", paste0(safe_caption, "_", timestamp, ".xlsx"))
     
     # Create and save the Excel file with the actual data
     writexl::write_xlsx(df, filename)
