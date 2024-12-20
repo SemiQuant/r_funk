@@ -191,7 +191,14 @@ perform_mSig_analysis <- function(results_df, title, p_cutoff = 0.05,
         }
         
         # Create initial ranking to check for ties
-        initial_ranking <- results_df$stat
+        initial_ranking <- if (ranking_method == "logfc") {
+            results_df$log2FoldChange
+        } else if (ranking_method == "logfc_pval") {
+            results_df$log2FoldChange * -log10(pmax(results_df$padj, 1e-10))
+        } else {
+            results_df$stat
+        }
+        
         tie_counts <- table(initial_ranking)
         tied_values <- tie_counts[tie_counts > 1]
         tie_percentage <- (sum(tied_values * (tied_values - 1)) / length(initial_ranking)) * 100
