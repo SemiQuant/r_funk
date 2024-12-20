@@ -86,7 +86,9 @@ create_interactive_datatable <- function(df, caption_text, expandable_cols = c(8
           list(
             extend = 'excel',
             text = 'Download Excel',
-            filename = paste0(caption_text, '_data')
+            filename = paste0(gsub("[^[:alnum:]]", "_", caption_text), 
+                            "_", 
+                            format(Sys.time(), "%Y%m%d_%H%M%S"))
           )
         ),
         searchDelay = 1000
@@ -124,7 +126,7 @@ create_interactive_datatable <- function(df, caption_text, expandable_cols = c(8
     # Create a unique filename using timestamp
     timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
     safe_caption <- gsub("[^[:alnum:]]", "_", caption_text) # Remove special characters
-    filename <- file.path(tempdir(), paste0(safe_caption, "_", timestamp, ".xlsx"))
+    filename <- paste0(safe_caption, "_", timestamp, ".xlsx")
     
     # Create and save the Excel file with the actual data
     writexl::write_xlsx(df, filename)
