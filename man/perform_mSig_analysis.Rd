@@ -17,8 +17,6 @@ perform_mSig_analysis(
   ranking_method = "auto",
   handle_ties = TRUE,
   n_cores = 1,
-  chunk_size = 100,
-  memory_efficient = FALSE,
   max_plot_pathways = 20
 )
 }
@@ -56,11 +54,7 @@ by using more sophisticated ranking metrics (default: TRUE)}
 
 \item{n_cores}{Number of CPU cores to use for parallel processing (default: 1)}
 
-\item{chunk_size}{Number of pathways to process in each chunk (default: 100)}
-
-\item{memory_efficient}{Logical indicating whether to use memory-efficient mode (default: FALSE)}
-
-\item{max_plot_pathways}{Maximum number of pathways to include in the visualization plot (default: 50)}
+\item{max_plot_pathways}{Maximum number of pathways to include in the visualization plot (default: 20)}
 }
 \value{
 A list containing:
@@ -76,15 +70,17 @@ A list containing:
 \item size: Size of the gene set
 \item leadingEdge: Leading edge genes
 }
-\item plot: GSEA table visualization for significant pathways
+\item plot: GSEA visualization for significant pathways
 \item status: Character string indicating analysis status
+\item n_significant: Number of significant pathways found
+\item total_pathways: Total number of pathways analyzed
 }
 }
 \description{
 This function performs Gene Set Enrichment Analysis (GSEA) using MSigDB gene sets
 and creates visualization plots. Uses the multilevel GSEA algorithm for more accurate
-p-values and better computational efficiency. Supports parallel processing and
-memory-efficient operation for large datasets.
+p-values and better computational efficiency. Supports parallel processing for
+faster analysis.
 }
 \details{
 The function performs the following steps:
@@ -100,14 +96,9 @@ The multilevel GSEA algorithm provides more accurate p-values than standard GSEA
 especially for pathways with strong enrichment scores. It automatically determines
 the optimal number of permutations needed for each pathway.
 
-For large datasets or systems with limited memory, the memory_efficient mode can be used
-to process pathways in chunks. This mode can be combined with parallel processing for
-optimal performance. The chunk_size parameter controls the trade-off between memory
-usage and processing overhead.
-
 Parallel processing is supported through BiocParallel and can significantly speed up
 the analysis when multiple cores are available. The optimal number of cores depends
-on your system's capabilities and available memory.
+on your system's capabilities.
 }
 \examples{
 # Basic usage
@@ -125,15 +116,6 @@ msig_results <- perform_mSig_analysis(
   n_cores = 4  # Use 4 CPU cores
 )
 
-# Memory-efficient mode for large datasets
-msig_results <- perform_mSig_analysis(
-  results_df, 
-  "Treatment vs Control",
-  memory_efficient = TRUE,
-  chunk_size = 50,  # Process 50 pathways at a time
-  n_cores = 4       # Use parallel processing
-)
-
 # Customizing analysis parameters
 msig_results <- perform_mSig_analysis(
   results_df, 
@@ -143,7 +125,6 @@ msig_results <- perform_mSig_analysis(
   min_size = 10,             # Include smaller gene sets
   max_size = 1000,           # Include larger gene sets
   nPermSimple = 2000,        # More permutations
-  memory_efficient = TRUE,    # Use memory-efficient mode
   n_cores = 4                # Use parallel processing
 )
 
