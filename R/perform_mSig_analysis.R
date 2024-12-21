@@ -28,6 +28,7 @@
 #' @param n_cores Number of CPU cores to use for parallel processing (default: 1)
 #' @param chunk_size Number of pathways to process in each chunk (default: 100)
 #' @param memory_efficient Logical indicating whether to use memory-efficient mode (default: FALSE)
+#' @param max_plot_pathways Maximum number of pathways to include in the visualization plot (default: 50)
 #' 
 #' @return A list containing:
 #' \itemize{
@@ -124,7 +125,8 @@ perform_mSig_analysis <- function(results_df, title, p_cutoff = 0.05,
                                 handle_ties = TRUE,
                                 n_cores = 1,
                                 chunk_size = 100,
-                                memory_efficient = FALSE) {
+                                memory_efficient = FALSE,
+                                max_plot_pathways = 20) {
     # Input validation with informative error messages
     if (!is.data.frame(results_df)) {
         stop("results_df must be a data frame")
@@ -375,24 +377,51 @@ perform_mSig_analysis <- function(results_df, title, p_cutoff = 0.05,
         # Create GSEA table plot for significant pathways
         plot <- NULL
         if (nrow(sig_results) > 0) {
-            message(sprintf("Creating GSEA table for %d significant pathways...", nrow(sig_results)))
+            n_sig_pathways <- nrow(sig_results)
+            if (n_sig_pathways > max_plot_pathways) {
+                message(sprintf("Large number of significant pathways (%d). Plotting top %d for visualization.", 
+                              n_sig_pathways, max_plot_pathways))
+                sig_results <- sig_results %>%
+                    arrange(padj) %>%
+                    slice_head(n = max_plot_pathways)
+            }
             
-            plot <- plotGseaTable(
-                pathways = pathways[sig_results$pathway],
-                stats = ranked_genes,
-                fgseaRes = sig_results,
-                gseaParam = 0.5
-            )
+            message(sprintf("Creating GSEA table for %d pathways...", nrow(sig_results)))
+            
+            # Clean up memory before plotting
+            gc()
+            
+            # Create plot with error handling
+            plot <- tryCatch({
+                # Subset pathways for plotting to reduce memory usage
+                plot_pathways <- pathways[sig_results$pathway]
+                
+                plotGseaTable(
+                    pathways = plot_pathways,
+                    stats = ranked_genes,
+                    fgseaRes = sig_results,
+                    gseaParam = 0.5
+                )
+            }, error = function(e) {
+                warning(sprintf("Failed to create GSEA plot: %s", e$message))
+                return(NULL)
+            })
         } else {
             message("No significant pathways found at the specified p-value cutoff")
         }
         
-        # Return results with ranking information
+        # Clean up large objects before returning
+        rm(pathways)
+        gc()
+        
+        # Return results with ranking information and pathway count
         return(list(
             results = fgsea_results,
             plot = plot,
             status = "success",
-            ranking_info = ranking_info
+            ranking_info = ranking_info,
+            n_significant = nrow(sig_results),
+            total_pathways = nrow(fgsea_results)
         ))
         
     }, error = function(e) {

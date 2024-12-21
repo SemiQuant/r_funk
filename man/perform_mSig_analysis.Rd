@@ -18,7 +18,8 @@ perform_mSig_analysis(
   handle_ties = TRUE,
   n_cores = 1,
   chunk_size = 100,
-  memory_efficient = FALSE
+  memory_efficient = FALSE,
+  max_plot_pathways = 20
 )
 }
 \arguments{
@@ -58,6 +59,8 @@ by using more sophisticated ranking metrics (default: TRUE)}
 \item{chunk_size}{Number of pathways to process in each chunk (default: 100)}
 
 \item{memory_efficient}{Logical indicating whether to use memory-efficient mode (default: FALSE)}
+
+\item{max_plot_pathways}{Maximum number of pathways to include in the visualization plot (default: 50)}
 }
 \value{
 A list containing:
