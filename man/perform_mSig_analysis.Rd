@@ -16,7 +16,6 @@ perform_mSig_analysis(
   nPermSimple = 1000,
   ranking_method = "auto",
   handle_ties = TRUE,
-  n_cores = 1,
   max_plot_pathways = 20
 )
 }
@@ -52,8 +51,6 @@ required columns: gene_symbol (or gene_id) and stat}
 \item{handle_ties}{Logical indicating whether to automatically handle ties
 by using more sophisticated ranking metrics (default: TRUE)}
 
-\item{n_cores}{Number of CPU cores to use for parallel processing (default: 1)}
-
 \item{max_plot_pathways}{Maximum number of pathways to include in the visualization plot (default: 20)}
 }
 \value{
@@ -70,17 +67,14 @@ A list containing:
 \item size: Size of the gene set
 \item leadingEdge: Leading edge genes
 }
-\item plot: GSEA visualization for significant pathways
+\item plot: GSEA table visualization for significant pathways
 \item status: Character string indicating analysis status
-\item n_significant: Number of significant pathways found
-\item total_pathways: Total number of pathways analyzed
 }
 }
 \description{
 This function performs Gene Set Enrichment Analysis (GSEA) using MSigDB gene sets
 and creates visualization plots. Uses the multilevel GSEA algorithm for more accurate
-p-values and better computational efficiency. Supports parallel processing for
-faster analysis.
+p-values and better computational efficiency.
 }
 \details{
 The function performs the following steps:
@@ -88,44 +82,20 @@ The function performs the following steps:
 \item Validates input data and parameters
 \item Creates a ranked gene list based on the test statistic
 \item Retrieves MSigDB gene sets for the specified genome and category
-\item Performs multilevel GSEA analysis with optional parallel processing
+\item Performs multilevel GSEA analysis
 \item Creates visualization for significant pathways
 }
 
 The multilevel GSEA algorithm provides more accurate p-values than standard GSEA,
 especially for pathways with strong enrichment scores. It automatically determines
 the optimal number of permutations needed for each pathway.
-
-Parallel processing is supported through BiocParallel and can significantly speed up
-the analysis when multiple cores are available. The optimal number of cores depends
-on your system's capabilities.
 }
 \examples{
-# Basic usage
 results_df <- data.frame(
   gene_id = c("Trp53", "Brca1", "Myc"),
   padj = c(0.01, 0.03, 0.02),
   stat = c(1.5, -2.0, 2.5)
 )
 msig_results <- perform_mSig_analysis(results_df, "Treatment vs Control")
-
-# Using parallel processing
-msig_results <- perform_mSig_analysis(
-  results_df, 
-  "Treatment vs Control",
-  n_cores = 4  # Use 4 CPU cores
-)
-
-# Customizing analysis parameters
-msig_results <- perform_mSig_analysis(
-  results_df, 
-  "Treatment vs Control",
-  p_cutoff = 0.01,           # More stringent p-value cutoff
-  category = "C2",           # Use C2 (curated) gene sets
-  min_size = 10,             # Include smaller gene sets
-  max_size = 1000,           # Include larger gene sets
-  nPermSimple = 2000,        # More permutations
-  n_cores = 4                # Use parallel processing
-)
 
 }

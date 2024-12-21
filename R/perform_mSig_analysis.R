@@ -2,8 +2,7 @@
 #' 
 #' This function performs Gene Set Enrichment Analysis (GSEA) using MSigDB gene sets
 #' and creates visualization plots. Uses the multilevel GSEA algorithm for more accurate
-#' p-values and better computational efficiency. Supports parallel processing for
-#' faster analysis.
+#' p-values and better computational efficiency.
 #' 
 #' @param results_df A data frame containing differential expression results with
 #'        required columns: gene_symbol (or gene_id) and stat
@@ -25,7 +24,6 @@
 #'        "expression" (incorporate expression level) (default: "auto")
 #' @param handle_ties Logical indicating whether to automatically handle ties
 #'        by using more sophisticated ranking metrics (default: TRUE)
-#' @param n_cores Number of CPU cores to use for parallel processing (default: 1)
 #' @param max_plot_pathways Maximum number of pathways to include in the visualization plot (default: 20)
 #' 
 #' @return A list containing:
@@ -41,10 +39,8 @@
 #'       \item size: Size of the gene set
 #'       \item leadingEdge: Leading edge genes
 #'     }
-#'   \item plot: GSEA visualization for significant pathways
+#'   \item plot: GSEA table visualization for significant pathways
 #'   \item status: Character string indicating analysis status
-#'   \item n_significant: Number of significant pathways found
-#'   \item total_pathways: Total number of pathways analyzed
 #' }
 #' 
 #' @details
@@ -53,7 +49,7 @@
 #'   \item Validates input data and parameters
 #'   \item Creates a ranked gene list based on the test statistic
 #'   \item Retrieves MSigDB gene sets for the specified genome and category
-#'   \item Performs multilevel GSEA analysis with optional parallel processing
+#'   \item Performs multilevel GSEA analysis
 #'   \item Creates visualization for significant pathways
 #' }
 #' 
@@ -61,37 +57,19 @@
 #' especially for pathways with strong enrichment scores. It automatically determines
 #' the optimal number of permutations needed for each pathway.
 #' 
-#' Parallel processing is supported through BiocParallel and can significantly speed up
-#' the analysis when multiple cores are available. The optimal number of cores depends
-#' on your system's capabilities.
+#' @import msigdbr
+#' @import fgsea
+#' @import dplyr
+#' @import tibble
+#' @import ggplot2
 #' 
 #' @examples
-#' # Basic usage
 #' results_df <- data.frame(
 #'   gene_id = c("Trp53", "Brca1", "Myc"),
 #'   padj = c(0.01, 0.03, 0.02),
 #'   stat = c(1.5, -2.0, 2.5)
 #' )
 #' msig_results <- perform_mSig_analysis(results_df, "Treatment vs Control")
-#' 
-#' # Using parallel processing
-#' msig_results <- perform_mSig_analysis(
-#'   results_df, 
-#'   "Treatment vs Control",
-#'   n_cores = 4  # Use 4 CPU cores
-#' )
-#' 
-#' # Customizing analysis parameters
-#' msig_results <- perform_mSig_analysis(
-#'   results_df, 
-#'   "Treatment vs Control",
-#'   p_cutoff = 0.01,           # More stringent p-value cutoff
-#'   category = "C2",           # Use C2 (curated) gene sets
-#'   min_size = 10,             # Include smaller gene sets
-#'   max_size = 1000,           # Include larger gene sets
-#'   nPermSimple = 2000,        # More permutations
-#'   n_cores = 4                # Use parallel processing
-#' )
 #' 
 #' @export
 perform_mSig_analysis <- function(results_df, title, p_cutoff = 0.05, 
@@ -100,7 +78,6 @@ perform_mSig_analysis <- function(results_df, title, p_cutoff = 0.05,
                                 eps = 0, nPermSimple = 1000,
                                 ranking_method = "auto",
                                 handle_ties = TRUE,
-                                n_cores = 1,
                                 max_plot_pathways = 20) {
     # Input validation with informative error messages
     if (!is.data.frame(results_df)) {
@@ -120,8 +97,7 @@ perform_mSig_analysis <- function(results_df, title, p_cutoff = 0.05,
     }
     
     # Check for required packages
-    required_packages <- c("msigdbr", "fgsea", "dplyr", "tibble", "ggplot2", 
-                         "parallel", "BiocParallel", "enrichplot")
+    required_packages <- c("msigdbr", "fgsea", "dplyr", "tibble", "ggplot2")
     missing_packages <- required_packages[!sapply(required_packages, requireNamespace, quietly = TRUE)]
     if (length(missing_packages) > 0) {
         stop("Missing required packages: ", paste(missing_packages, collapse = ", "),
@@ -160,7 +136,63 @@ perform_mSig_analysis <- function(results_df, title, p_cutoff = 0.05,
             stop("Missing required column: stat (needed for stat-based ranking methods)")
         }
         
-        # Create ranking statistic
+        # Check for additional ranking metrics
+        available_metrics <- intersect(
+            c("log2FoldChange", "padj", "pvalue", "stat", "baseMean"),
+            names(results_df)
+        )
+        
+        # Function to create ranking statistic based on method
+        create_ranking <- function(df, method = "auto") {
+            if (method == "auto") {
+                # Choose best method based on available metrics
+                if (all(c("padj", "stat", "baseMean") %in% names(df))) {
+                    method <- "expression"
+                } else if (all(c("padj", "stat") %in% names(df))) {
+                    method <- "combined"
+                } else {
+                    method <- "stat"
+                }
+            }
+            
+            ranking <- switch(method,
+                "stat" = df$stat,
+                "logfc" = {
+                    if (!"log2FoldChange" %in% names(df)) {
+                        stop("log2FoldChange column required for logfc ranking method")
+                    }
+                    # For logfc method, we'll use log2FoldChange directly
+                    df$log2FoldChange
+                },
+                "logfc_pval" = {
+                    if (!all(c("log2FoldChange", "padj") %in% names(df))) {
+                        stop("Both log2FoldChange and padj columns required for logfc_pval ranking method")
+                    }
+                    # Combine log fold change with signed -log10(padj)
+                    df$log2FoldChange * -log10(pmax(df$padj, 1e-10))
+                },
+                "combined" = {
+                    # Combine p-value and effect size
+                    -log10(pmax(df$padj, 1e-10)) * sign(df$stat)
+                },
+                "expression" = {
+                    # Incorporate expression level
+                    -log10(pmax(df$padj, 1e-10)) * sign(df$stat) * 
+                        log2(pmax(df$baseMean, 1) + 1)
+                },
+                stop("Invalid ranking method")
+            )
+            
+            # Add small random noise to break remaining ties if requested
+            if (handle_ties) {
+                set.seed(42)  # for reproducibility
+                ranking <- ranking + rnorm(length(ranking), 0, sd(ranking, na.rm = TRUE) / 1e6)
+            }
+            
+            return(ranking)
+        }
+        
+        # Create initial ranking to check for ties
         initial_ranking <- if (ranking_method == "logfc") {
             results_df$log2FoldChange
         } else if (ranking_method == "logfc_pval") {
@@ -169,12 +201,11 @@ perform_mSig_analysis <- function(results_df, title, p_cutoff = 0.05,
             results_df$stat
         }
         
-        # Check for ties
         tie_counts <- table(initial_ranking)
         tied_values <- tie_counts[tie_counts > 1]
         tie_percentage <- (sum(tied_values * (tied_values - 1)) / length(initial_ranking)) * 100
         
-        # Handle ties if needed
+        # Determine if we need to use a more sophisticated ranking
         if (handle_ties && tie_percentage > 25) {
             message("High proportion of ties detected. Using more sophisticated ranking method...")
             results_df$ranking <- create_ranking(results_df, method = ranking_method)
@@ -214,14 +245,19 @@ perform_mSig_analysis <- function(results_df, title, p_cutoff = 0.05,
         }
         
         # Get MSigDB gene sets
-        message("Loading MSigDB gene sets...")
         m_df <- msigdbr(species = if(genome == "mmu") "Mus musculus" else "Homo sapiens",
                        category = category)
         pathways <- split(m_df$gene_symbol, m_df$gs_name)
         
-        # Run GSEA with parallel processing
-        message(sprintf("Running multilevel GSEA analysis%s...", 
-                      if(n_cores > 1) sprintf(" using %d cores", n_cores) else ""))
+        if (length(pathways) == 0) {
+            return(modifyList(empty_result, list(
+                status = "No pathways found for the specified category",
+                ranking_info = ranking_info
+            )))
+        }
+        
+        # Perform multilevel GSEA
+        message("Running multilevel GSEA analysis...")
         
         fgsea_results <- fgsea::fgseaMultilevel(
             pathways = pathways,
@@ -230,8 +266,7 @@ perform_mSig_analysis <- function(results_df, title, p_cutoff = 0.05,
             maxSize = max_size,
             eps = eps,
             nPermSimple = nPermSimple,
-            scoreType = score_type,
-            nproc = n_cores
+            scoreType = score_type
         )
         
         if (nrow(fgsea_results) == 0) {
@@ -254,62 +289,35 @@ perform_mSig_analysis <- function(results_df, title, p_cutoff = 0.05,
         sig_results <- fgsea_results %>%
             filter(padj < p_cutoff)
         
-        # Create visualization for significant pathways
+        # Create GSEA table plot
         plot <- NULL
         if (nrow(sig_results) > 0) {
-            n_sig_pathways <- nrow(sig_results)
-            if (n_sig_pathways > max_plot_pathways) {
-                message(sprintf("Large number of significant pathways (%d). Plotting top %d for visualization.", 
-                              n_sig_pathways, max_plot_pathways))
+            message(sprintf("Creating GSEA table for %d significant pathways...", nrow(sig_results)))
+            
+            # Limit the number of pathways to plot
+            if (nrow(sig_results) > max_plot_pathways) {
+                message(sprintf("Limiting visualization to top %d pathways by adjusted p-value", max_plot_pathways))
                 sig_results <- sig_results %>%
                     arrange(padj) %>%
-                    slice_head(n = max_plot_pathways)
+                    head(max_plot_pathways)
             }
             
-            message(sprintf("Creating visualization for %d pathways...", nrow(sig_results)))
-            
-            # Create plot with error handling
-            plot <- tryCatch({
-                # Create simpler visualization using ggplot2
-                sig_results %>%
-                    mutate(
-                        pathway = stringr::str_wrap(pathway, width = 50),
-                        pathway = factor(pathway, levels = rev(unique(pathway)))
-                    ) %>%
-                    ggplot(aes(x = NES, y = pathway)) +
-                    geom_bar(stat = "identity", 
-                           aes(fill = padj)) +
-                    geom_text(aes(label = sprintf("p=%.2e", padj)), 
-                            hjust = ifelse(NES > 0, -0.1, 1.1)) +
-                    scale_fill_gradient(low = "red", high = "blue") +
-                    labs(
-                        title = paste("GSEA Results:", title),
-                        x = "Normalized Enrichment Score (NES)",
-                        y = "Pathway",
-                        fill = "Adjusted\np-value"
-                    ) +
-                    theme_minimal() +
-                    theme(
-                        plot.title = element_text(size = 14, face = "bold"),
-                        axis.text.y = element_text(size = 10),
-                        legend.position = "right"
-                    )
-            }, error = function(e) {
-                warning(sprintf("Failed to create visualization: %s", e$message))
-                return(NULL)
-            })
+            plot <- plotGseaTable(
+                pathways = pathways[sig_results$pathway],
+                stats = ranked_genes,
+                fgseaRes = sig_results,
+                gseaParam = 0.5
+            )
         } else {
             message("No significant pathways found at the specified p-value cutoff")
         }
         
-        # Return results
+        # Return results with ranking information
         return(list(
             results = fgsea_results,
             plot = plot,
             status = "success",
-            ranking_info = ranking_info,
-            n_significant = nrow(sig_results),
-            total_pathways = nrow(fgsea_results)
+            ranking_info = ranking_info
         ))
         
     }, error = function(e) {
