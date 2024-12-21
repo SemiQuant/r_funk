@@ -2,7 +2,8 @@
 #' 
 #' This function performs Gene Set Enrichment Analysis (GSEA) using MSigDB gene sets
 #' and creates visualization plots. Uses the multilevel GSEA algorithm for more accurate
-#' p-values and better computational efficiency.
+#' p-values and better computational efficiency. Supports parallel processing and 
+#' memory-efficient operation for large datasets.
 #' 
 #' @param results_df A data frame containing differential expression results with
 #'        required columns: gene_symbol (or gene_id) and stat
@@ -24,6 +25,9 @@
 #'        "expression" (incorporate expression level) (default: "auto")
 #' @param handle_ties Logical indicating whether to automatically handle ties
 #'        by using more sophisticated ranking metrics (default: TRUE)
+#' @param n_cores Number of CPU cores to use for parallel processing (default: 1)
+#' @param chunk_size Number of pathways to process in each chunk (default: 100)
+#' @param memory_efficient Logical indicating whether to use memory-efficient mode (default: FALSE)
 #' 
 #' @return A list containing:
 #' \itemize{
@@ -48,7 +52,7 @@
 #'   \item Validates input data and parameters
 #'   \item Creates a ranked gene list based on the test statistic
 #'   \item Retrieves MSigDB gene sets for the specified genome and category
-#'   \item Performs multilevel GSEA analysis
+#'   \item Performs multilevel GSEA analysis with optional parallel processing
 #'   \item Creates visualization for significant pathways
 #' }
 #' 
@@ -56,13 +60,25 @@
 #' especially for pathways with strong enrichment scores. It automatically determines
 #' the optimal number of permutations needed for each pathway.
 #' 
+#' For large datasets or systems with limited memory, the memory_efficient mode can be used
+#' to process pathways in chunks. This mode can be combined with parallel processing for
+#' optimal performance. The chunk_size parameter controls the trade-off between memory
+#' usage and processing overhead.
+#' 
+#' Parallel processing is supported through BiocParallel and can significantly speed up
+#' the analysis when multiple cores are available. The optimal number of cores depends
+#' on your system's capabilities and available memory.
+#' 
 #' @import msigdbr
 #' @import fgsea
 #' @import dplyr
 #' @import tibble
 #' @import ggplot2
+#' @import parallel
+#' @import BiocParallel
 #' 
 #' @examples
+#' # Basic usage
 #' results_df <- data.frame(
 #'   gene_id = c("Trp53", "Brca1", "Myc"),
 #'   padj = c(0.01, 0.03, 0.02),
@@ -70,13 +86,45 @@
 #' )
 #' msig_results <- perform_mSig_analysis(results_df, "Treatment vs Control")
 #' 
+#' # Using parallel processing
+#' msig_results <- perform_mSig_analysis(
+#'   results_df, 
+#'   "Treatment vs Control",
+#'   n_cores = 4  # Use 4 CPU cores
+#' )
+#' 
+#' # Memory-efficient mode for large datasets
+#' msig_results <- perform_mSig_analysis(
+#'   results_df, 
+#'   "Treatment vs Control",
+#'   memory_efficient = TRUE,
+#'   chunk_size = 50,  # Process 50 pathways at a time
+#'   n_cores = 4       # Use parallel processing
+#' )
+#' 
+#' # Customizing analysis parameters
+#' msig_results <- perform_mSig_analysis(
+#'   results_df, 
+#'   "Treatment vs Control",
+#'   p_cutoff = 0.01,           # More stringent p-value cutoff
+#'   category = "C2",           # Use C2 (curated) gene sets
+#'   min_size = 10,             # Include smaller gene sets
+#'   max_size = 1000,           # Include larger gene sets
+#'   nPermSimple = 2000,        # More permutations
+#'   memory_efficient = TRUE,    # Use memory-efficient mode
+#'   n_cores = 4                # Use parallel processing
+#' )
+#' 
 #' @export
 perform_mSig_analysis <- function(results_df, title, p_cutoff = 0.05, 
                                 genome = "mmu", category = "H",
                                 min_size = 15, max_size = 500,
                                 eps = 0, nPermSimple = 1000,
                                 ranking_method = "auto",
-                                handle_ties = TRUE) {
+                                handle_ties = TRUE,
+                                n_cores = 1,
+                                chunk_size = 100,
+                                memory_efficient = FALSE) {
     # Input validation with informative error messages
     if (!is.data.frame(results_df)) {
         stop("results_df must be a data frame")
@@ -95,7 +143,8 @@ perform_mSig_analysis <- function(results_df, title, p_cutoff = 0.05,
     }
     
     # Check for required packages
-    required_packages <- c("msigdbr", "fgsea", "dplyr", "tibble", "ggplot2")
+    required_packages <- c("msigdbr", "fgsea", "dplyr", "tibble", "ggplot2", 
+                         "parallel", "BiocParallel")
     missing_packages <- required_packages[!sapply(required_packages, requireNamespace, quietly = TRUE)]
     if (length(missing_packages) > 0) {
         stop("Missing required packages: ", paste(missing_packages, collapse = ", "),
@@ -243,29 +292,65 @@ perform_mSig_analysis <- function(results_df, title, p_cutoff = 0.05,
         }
         
         # Get MSigDB gene sets
+        message("Loading MSigDB gene sets...")
         m_df <- msigdbr(species = if(genome == "mmu") "Mus musculus" else "Homo sapiens",
                        category = category)
-        pathways <- split(m_df$gene_symbol, m_df$gs_name)
         
-        if (length(pathways) == 0) {
-            return(modifyList(empty_result, list(
-                status = "No pathways found for the specified category",
-                ranking_info = ranking_info
-            )))
+        # Memory efficient mode: process gene sets in chunks
+        if (memory_efficient) {
+            message("Using memory-efficient mode...")
+            # Split pathways into chunks
+            pathways_list <- split(m_df$gene_symbol, m_df$gs_name)
+            chunk_indices <- split(seq_along(pathways_list), 
+                                 ceiling(seq_along(pathways_list)/chunk_size))
+            
+            # Initialize progress reporting
+            total_chunks <- length(chunk_indices)
+            message(sprintf("Processing %d pathway chunks...", total_chunks))
+            
+            # Set up parallel backend
+            if (n_cores > 1) {
+                message(sprintf("Using %d cores for parallel processing...", n_cores))
+                bp_param <- BiocParallel::MulticoreParam(workers = n_cores)
+            } else {
+                bp_param <- BiocParallel::SerialParam()
+            }
+            
+            # Process chunks in parallel
+            chunk_results <- BiocParallel::bplapply(chunk_indices, function(chunk_idx) {
+                chunk_pathways <- pathways_list[chunk_idx]
+                fgsea::fgseaMultilevel(
+                    pathways = chunk_pathways,
+                    stats = ranked_genes,
+                    minSize = min_size,
+                    maxSize = max_size,
+                    eps = eps,
+                    nPermSimple = nPermSimple,
+                    scoreType = score_type,
+                    nproc = 1  # Use 1 here since we're already parallelizing chunks
+                )
+            }, BPPARAM = bp_param)
+            
+            # Combine results
+            fgsea_results <- do.call(rbind, chunk_results)
+            
+        } else {
+            # Standard mode with parallel processing
+            message(sprintf("Running multilevel GSEA analysis%s...", 
+                          if(n_cores > 1) sprintf(" using %d cores", n_cores) else ""))
+            
+            pathways <- split(m_df$gene_symbol, m_df$gs_name)
+            fgsea_results <- fgsea::fgseaMultilevel(
+                pathways = pathways,
+                stats = ranked_genes,
+                minSize = min_size,
+                maxSize = max_size,
+                eps = eps,
+                nPermSimple = nPermSimple,
+                scoreType = score_type,
+                nproc = n_cores
+            )
         }
-        
-        # Perform multilevel GSEA
-        message("Running multilevel GSEA analysis...")
-        
-        fgsea_results <- fgsea::fgseaMultilevel(
-            pathways = pathways,
-            stats = ranked_genes,
-            minSize = min_size,
-            maxSize = max_size,
-            eps = eps,
-            nPermSimple = nPermSimple,
-            scoreType = score_type
-        )
         
         if (nrow(fgsea_results) == 0) {
             return(modifyList(empty_result, list(

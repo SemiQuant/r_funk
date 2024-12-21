@@ -15,7 +15,10 @@ perform_mSig_analysis(
   eps = 0,
   nPermSimple = 1000,
   ranking_method = "auto",
-  handle_ties = TRUE
+  handle_ties = TRUE,
+  n_cores = 1,
+  chunk_size = 100,
+  memory_efficient = FALSE
 )
 }
 \arguments{
@@ -49,6 +52,12 @@ required columns: gene_symbol (or gene_id) and stat}
 
 \item{handle_ties}{Logical indicating whether to automatically handle ties
 by using more sophisticated ranking metrics (default: TRUE)}
+
+\item{n_cores}{Number of CPU cores to use for parallel processing (default: 1)}
+
+\item{chunk_size}{Number of pathways to process in each chunk (default: 100)}
+
+\item{memory_efficient}{Logical indicating whether to use memory-efficient mode (default: FALSE)}
 }
 \value{
 A list containing:
@@ -71,7 +80,8 @@ A list containing:
 \description{
 This function performs Gene Set Enrichment Analysis (GSEA) using MSigDB gene sets
 and creates visualization plots. Uses the multilevel GSEA algorithm for more accurate
-p-values and better computational efficiency.
+p-values and better computational efficiency. Supports parallel processing and
+memory-efficient operation for large datasets.
 }
 \details{
 The function performs the following steps:
@@ -79,20 +89,59 @@ The function performs the following steps:
 \item Validates input data and parameters
 \item Creates a ranked gene list based on the test statistic
 \item Retrieves MSigDB gene sets for the specified genome and category
-\item Performs multilevel GSEA analysis
+\item Performs multilevel GSEA analysis with optional parallel processing
 \item Creates visualization for significant pathways
 }
 
 The multilevel GSEA algorithm provides more accurate p-values than standard GSEA,
 especially for pathways with strong enrichment scores. It automatically determines
 the optimal number of permutations needed for each pathway.
+
+For large datasets or systems with limited memory, the memory_efficient mode can be used
+to process pathways in chunks. This mode can be combined with parallel processing for
+optimal performance. The chunk_size parameter controls the trade-off between memory
+usage and processing overhead.
+
+Parallel processing is supported through BiocParallel and can significantly speed up
+the analysis when multiple cores are available. The optimal number of cores depends
+on your system's capabilities and available memory.
 }
 \examples{
+# Basic usage
 results_df <- data.frame(
   gene_id = c("Trp53", "Brca1", "Myc"),
   padj = c(0.01, 0.03, 0.02),
   stat = c(1.5, -2.0, 2.5)
 )
 msig_results <- perform_mSig_analysis(results_df, "Treatment vs Control")
+
+# Using parallel processing
+msig_results <- perform_mSig_analysis(
+  results_df, 
+  "Treatment vs Control",
+  n_cores = 4  # Use 4 CPU cores
+)
+
+# Memory-efficient mode for large datasets
+msig_results <- perform_mSig_analysis(
+  results_df, 
+  "Treatment vs Control",
+  memory_efficient = TRUE,
+  chunk_size = 50,  # Process 50 pathways at a time
+  n_cores = 4       # Use parallel processing
+)
+
+# Customizing analysis parameters
+msig_results <- perform_mSig_analysis(
+  results_df, 
+  "Treatment vs Control",
+  p_cutoff = 0.01,           # More stringent p-value cutoff
+  category = "C2",           # Use C2 (curated) gene sets
+  min_size = 10,             # Include smaller gene sets
+  max_size = 1000,           # Include larger gene sets
+  nPermSimple = 2000,        # More permutations
+  memory_efficient = TRUE,    # Use memory-efficient mode
+  n_cores = 4                # Use parallel processing
+)
 
 }
