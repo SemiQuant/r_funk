@@ -106,7 +106,7 @@ real-time quantitative PCR and the 2(-Delta Delta C(T)) Method. Methods 25(4), 4
 }
 \seealso{
 \itemize{
-\item \url{https://doi.org/10.1186/1471-2105-7-85} for the statistical methods paper
+\item \url{https://doi.org/10.1186/1471-2105} for the statistical methods paper
 \item \url{https://doi.org/10.1006/meth.2001.1262} for the original delta-delta CT method paper
 }
 }

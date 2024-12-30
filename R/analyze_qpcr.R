@@ -72,12 +72,13 @@
 #' 
 #' @seealso 
 #' \itemize{
-#'   \item \url{https://doi.org/10.1186/1471-2105-7-85} for the statistical methods paper
+#'   \item \url{https://doi.org/10.1186/1471-2105} for the statistical methods paper
 #'   \item \url{https://doi.org/10.1006/meth.2001.1262} for the original delta-delta CT method paper
 #' }
 #' 
-#' @importFrom tidyverse %>%
-#' @importFrom dplyr filter mutate group_by ungroup summarise select left_join rename deframe
+#' @importFrom magrittr %>%
+#' @importFrom dplyr filter mutate group_by ungroup summarise select left_join rename pull
+#' @importFrom tidyr pivot_wider unnest
 #' @importFrom broom tidy
 #' @importFrom cli cli_progress_bar cli_progress_update
 #' @importFrom ggplot2 ggplot aes geom_boxplot geom_point position_jitter scale_fill_manual theme_minimal theme element_text labs coord_trans scale_y_continuous geom_hline geom_bar
@@ -100,6 +101,50 @@ analyze_pcr <- function(data,
                        neg_control = "NTC",
                        omit_col = "Omit") {
   
+  # Input validation
+  if (!is.data.frame(data)) {
+    stop("Input 'data' must be a data frame")
+  }
+  
+  # Check required columns exist
+  required_cols <- c(ct_col, sample_col, target_col, omit_col)
+  missing_cols <- setdiff(required_cols, names(data))
+  if (length(missing_cols) > 0) {
+    stop("Missing required columns: ", paste(missing_cols, collapse = ", "))
+  }
+  
+  # Check method is valid
+  valid_methods <- c("delta_delta_ct", "direct_ct")
+  if (!method %in% valid_methods) {
+    stop("Method must be one of: ", paste(valid_methods, collapse = ", "))
+  }
+  
+  # Check target exists in data
+  if (!target %in% unique(data[[target_col]])) {
+    stop("Target '", target, "' not found in data")
+  }
+  
+  # Check reference sample exists in data
+  if (!reference_sample %in% unique(data[[sample_col]])) {
+    stop("Reference sample '", reference_sample, "' not found in data")
+  }
+  
+  # Check reference target if using delta-delta CT method
+  if (method == "delta_delta_ct" && !is.null(reference_target)) {
+    if (!reference_target %in% unique(data[[target_col]])) {
+      stop("Reference target '", reference_target, "' not found in data")
+    }
+  }
+  
+  # Load required packages
+  requireNamespace("tidyr", quietly = TRUE)
+  requireNamespace("dplyr", quietly = TRUE)
+  requireNamespace("broom", quietly = TRUE)
+  requireNamespace("ggplot2", quietly = TRUE)
+  requireNamespace("gridExtra", quietly = TRUE)
+  requireNamespace("knitr", quietly = TRUE)
+  
+  # Start progress bar
   cli_progress_bar("Analyzing PCR data", total = 7)
   
   # Remove omitted samples and controls
@@ -201,8 +246,10 @@ analyze_pcr <- function(data,
         ddct_data$fold_change[ddct_data[[sample_col]] == reference_sample]
       ))),
       .groups = "drop"
-    ) %>%
-    unnest(t_test)
+    )
+  
+  # Unnest the t-test results
+  contrasts <- tidyr::unnest(contrasts, t_test)
   
   cli_progress_update()
   
@@ -218,7 +265,7 @@ analyze_pcr <- function(data,
           n = n(),
           .groups = "drop"
         ) %>%
-        pivot_wider(
+        tidyr::pivot_wider(
           names_from = .data[[target_col]],
           values_from = c(mean_ct, sd_ct, n)
         ) %>%

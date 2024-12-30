@@ -20,7 +20,7 @@ Imports:
     org.Mm.eg.db,
     org.Hs.eg.db,
     clusterProfiler,
-    dplyr,
+    dplyr (>= 1.0.0),
     AnnotationDbi,
     rlang,
     pheatmap,
@@ -32,11 +32,14 @@ Imports:
     writexl,
     shiny,
     fgsea,
-    tidyverse,
+    tidyr (>= 1.0.0),
     broom,
     cli,
     cowplot,
     gridExtra,
     knitr
+Suggests:
+    testthat,
+    rmarkdown
 Depends: 
     R (>= 3.5)
