@@ -236,20 +236,24 @@ analyze_pcr <- function(data,
   
   cli_progress_update()
   
-  # Perform pairwise comparisons
-  contrasts <- ddct_data %>%
-    filter(.data[[sample_col]] != reference_sample) %>%
-    group_by(.data[[sample_col]]) %>%
-    summarise(
-      t_test = list(tidy(t.test(
-        fold_change,
-        ddct_data$fold_change[ddct_data[[sample_col]] == reference_sample]
-      ))),
-      .groups = "drop"
-    )
-  
-  # Unnest the t-test results
-  contrasts <- tidyr::unnest(contrasts, t_test)
+  # Perform pairwise comparisons and unnest results
+  tryCatch({
+    contrasts <- ddct_data %>%
+      filter(.data[[sample_col]] != reference_sample) %>%
+      group_by(.data[[sample_col]]) %>%
+      summarise(
+        t_test = list(tidy(t.test(
+          fold_change,
+          ddct_data$fold_change[ddct_data[[sample_col]] == reference_sample]
+        ))),
+        .groups = "drop"
+      )
+    
+    # Explicitly use tidyr::unnest with cols argument
+    contrasts <- tidyr::unnest(contrasts, cols = t_test)
+  }, error = function(e) {
+    stop("Error in performing statistical contrasts: ", e$message)
+  })
   
   cli_progress_update()
   
