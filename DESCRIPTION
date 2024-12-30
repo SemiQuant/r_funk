@@ -31,6 +31,12 @@ Imports:
     magrittr,
     writexl,
     shiny,
-    fgsea
+    fgsea,
+    tidyverse,
+    broom,
+    cli,
+    cowplot,
+    gridExtra,
+    knitr
 Depends: 
     R (>= 3.5)
