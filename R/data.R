@@ -9,18 +9,55 @@
 #' Example qPCR Data
 #'
 #' A dataset containing example qPCR results for demonstrating the analyze_pcr function.
-#' The data includes Ct values for a target gene and a reference gene across multiple samples.
+#' The data includes Ct values for a target gene and a reference gene across multiple samples,
+#' with known fold changes relative to the control group.
+#'
+#' The dataset is designed to demonstrate both delta-delta CT and direct CT analysis methods:
+#' * Control: baseline expression
+#' * Treatment_A: 2-fold increase (-1 Ct)
+#' * Treatment_B: 4-fold increase (-2 Ct)
+#' * Treatment_C: 0.5-fold decrease (+1 Ct)
+#'
+#' The reference gene is designed to be stable across all conditions with a base Ct of 20.
+#' The target gene has a base Ct of 25 in the control condition.
+#' Technical variation is simulated with a standard deviation of 0.3 Ct.
 #'
 #' @format A data frame with 24 rows and 5 columns:
 #' \describe{
-#'   \item{Sample}{Sample identifier}
-#'   \item{Target}{Target gene or reference gene name}
-#'   \item{Cq}{Ct value from qPCR}
-#'   \item{Omit}{Logical indicating whether to omit the sample}
-#'   \item{Replicate}{Technical replicate number}
+#'   \item{Sample}{Sample identifier: Control, Treatment_A, Treatment_B, or Treatment_C}
+#'   \item{Target}{Target gene or reference gene name: Target_Gene or Reference_Gene}
+#'   \item{Cq}{Ct value from qPCR, with expected values:
+#'     \itemize{
+#'       \item Reference_Gene: ~20 (stable across conditions)
+#'       \item Target_Gene:
+#'         \itemize{
+#'           \item Control: ~25
+#'           \item Treatment_A: ~24 (2-fold increase)
+#'           \item Treatment_B: ~23 (4-fold increase)
+#'           \item Treatment_C: ~26 (0.5-fold decrease)
+#'         }
+#'     }
+#'   }
+#'   \item{Omit}{Logical indicating whether to omit the sample (includes one outlier for demonstration)}
+#'   \item{Replicate}{Technical replicate number (1-3)}
 #' }
 #'
 #' @examples
+#' # Load the example dataset
 #' data(qpcr_example)
-#' head(qpcr_example)
+#' 
+#' # View the structure
+#' str(qpcr_example)
+#' 
+#' # View summary statistics
+#' summary(qpcr_example)
+#' 
+#' # View mean Ct values by group
+#' library(dplyr)
+#' qpcr_example %>%
+#'   filter(!Omit) %>%
+#'   group_by(Sample, Target) %>%
+#'   summarise(mean_ct = mean(Cq), sd_ct = sd(Cq))
+#'
+#' @source Generated example data with known fold changes for demonstration purposes
 "qpcr_example" 
