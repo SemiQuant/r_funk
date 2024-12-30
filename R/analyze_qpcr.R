@@ -376,9 +376,9 @@ analyze_pcr <- function(data,
       name = "Significance",
       values = c(
         "Reference" = "grey80",
-        "p < 0.001" = "#0072B2",
-        "p < 0.01" = "#009E73",
-        "p < 0.05" = "#56B4E9",
+        "p < 0.001" = "#37ff00",
+        "p < 0.01" = "#009e4a",
+        "p < 0.05" = "#00ff99",
         "Not significant" = "#E69F00"
     )) +
     theme_minimal() +
