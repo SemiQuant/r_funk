@@ -40,6 +40,8 @@ Imports:
     knitr
 Suggests:
     testthat,
-    rmarkdown
+    rmarkdown,
+    knitr
+VignetteBuilder: knitr
 Depends: 
     R (>= 3.5)
