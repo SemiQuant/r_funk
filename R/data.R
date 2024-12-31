@@ -8,56 +8,35 @@
 
 #' Example qPCR Data
 #'
-#' A dataset containing example qPCR results for demonstrating the analyze_pcr function.
-#' The data includes Ct values for a target gene and a reference gene across multiple samples,
-#' with known fold changes relative to the control group.
+#' A dataset containing example qPCR data with control and treatment samples
 #'
-#' The dataset is designed to demonstrate both delta-delta CT and direct CT analysis methods:
-#' * Control: baseline expression
-#' * Treatment_A: 2-fold increase (-1 Ct)
-#' * Treatment_B: 4-fold increase (-2 Ct)
-#' * Treatment_C: 0.5-fold decrease (+1 Ct)
-#'
-#' The reference gene is designed to be stable across all conditions with a base Ct of 20.
-#' The target gene has a base Ct of 25 in the control condition.
-#' Technical variation is simulated with a standard deviation of 0.3 Ct.
-#'
-#' @format A data frame with 24 rows and 5 columns:
+#' @format A data frame with 12 rows and 4 variables:
 #' \describe{
-#'   \item{Sample}{Sample identifier: Control, Treatment_A, Treatment_B, or Treatment_C}
-#'   \item{Target}{Target gene or reference gene name: Target_Gene or Reference_Gene}
-#'   \item{Cq}{Ct value from qPCR, with expected values:
-#'     \itemize{
-#'       \item Reference_Gene: ~20 (stable across conditions)
-#'       \item Target_Gene:
-#'         \itemize{
-#'           \item Control: ~25
-#'           \item Treatment_A: ~24 (2-fold increase)
-#'           \item Treatment_B: ~23 (4-fold increase)
-#'           \item Treatment_C: ~26 (0.5-fold decrease)
-#'         }
-#'     }
-#'   }
-#'   \item{Omit}{Logical indicating whether to omit the sample (includes one outlier for demonstration)}
-#'   \item{Replicate}{Technical replicate number (1-3)}
+#'   \item{Sample}{Sample name (Control or Treatment)}
+#'   \item{Target}{Target gene name (Target_Gene or Reference_Gene)}
+#'   \item{Cq}{Quantification cycle (Cq) values}
+#'   \item{Omit}{Logical indicating whether to omit the data point}
 #' }
+"example_qpcr_data"
+
+#' Example Gene Expression Data
 #'
-#' @examples
-#' # Load the example dataset
-#' data(qpcr_example)
-#' 
-#' # View the structure
-#' str(qpcr_example)
-#' 
-#' # View summary statistics
-#' summary(qpcr_example)
-#' 
-#' # View mean Ct values by group
-#' library(dplyr)
-#' qpcr_example %>%
-#'   filter(!Omit) %>%
-#'   group_by(Sample, Target) %>%
-#'   summarise(mean_ct = mean(Cq), sd_ct = sd(Cq))
+#' A dataset containing example differential expression results
 #'
-#' @source Generated example data with known fold changes for demonstration purposes
-"qpcr_example" 
+#' @format A data frame with 1000 rows and 6 variables:
+#' \describe{
+#'   \item{gene_symbol}{Gene identifier}
+#'   \item{logFC}{Log2 fold change}
+#'   \item{P.Value}{Raw p-value}
+#'   \item{padj}{Adjusted p-value}
+#'   \item{log2FoldChange}{Log2 fold change (alternative format)}
+#'   \item{stat}{Test statistic}
+#' }
+"example_gene_expr"
+
+#' Example Gene List
+#'
+#' A vector of significant genes from the example gene expression data
+#'
+#' @format A character vector containing gene symbols
+"example_gene_list" 

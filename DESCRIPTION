@@ -41,7 +41,8 @@ Imports:
 Suggests:
     testthat,
     rmarkdown,
-    knitr
+    knitr,
+    BiocManager
 VignetteBuilder: knitr
 Depends: 
     R (>= 3.5)

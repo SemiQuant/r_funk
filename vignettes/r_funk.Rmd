@@ -16,43 +16,45 @@ knitr::opts_chunk$set(
   warning = FALSE,
   message = FALSE,
   fig.width = 7,
-  fig.height = 5
+  fig.height = 5,
+  eval = FALSE
 )
 ```
 
 ## Introduction
 
-`Rfunk` is a R package to streamline my bioinformatics analyses.
+`Rfunk` is an R package that streamlines bioinformatics analyses, providing tools for qPCR analysis, differential expression analysis, and various visualization functions.
+
+## Installation
+
+You can install the development version of Rfunk from GitHub:
+
+```{r}
+# install.packages("devtools")
+devtools::install_github("SemiQuant/r_funk")
+```
 
 ## Basic Usage
 
-First, let's load the package:
+First, load the package and example data:
 
 ```{r}
-require(Rfunk)
+library(Rfunk)
+data(example_qpcr_data, package = "Rfunk")
+data(example_gene_expr, package = "Rfunk")
+data(example_gene_list, package = "Rfunk")
 ```
 
-### qPCR Analysis Example
+## Main Functions
 
-Let's create a simple example dataset and analyze it:
+### 1. qPCR Analysis
+
+Analyze qPCR data with the `analyze_pcr()` function:
 
 ```{r}
-# Create minimal example data
-test_data <- data.frame(
-  Sample = rep(c("Control", "Treatment"), each = 6),
-  Target = rep(c("Target_Gene", "Reference_Gene"), each = 3, times = 2),
-  Cq = c(
-    rnorm(3, 25, 0.3), # Control - Target
-    rnorm(3, 20, 0.3), # Control - Reference
-    rnorm(3, 24, 0.3), # Treatment - Target
-    rnorm(3, 20, 0.3)  # Treatment - Reference
-  ),
-  Omit = FALSE
-)
-
-# Run analysis
+# Run qPCR analysis
 results <- analyze_pcr(
-  data = test_data,
+  data = example_qpcr_data,
   ct_col = "Cq",
   sample_col = "Sample",
   target_col = "Target",
@@ -62,7 +64,9 @@ results <- analyze_pcr(
 )
 ```
 
-### Outlier Detection
+### 2. Outlier Detection
+
+Detect outliers in your data:
 
 ```{r}
 # Create example data with outliers
@@ -73,37 +77,39 @@ data <- data.frame(
 
 # Detect outliers
 outliers <- detect_outliers(data$values)
-print(paste("Number of outliers detected:", sum(outliers)))
 ```
 
-### Gene Set Analysis
+### 3. Gene Set Analysis
+
+Perform various types of gene set analysis:
 
 ```{r}
-# Example gene expression data
-data("example_gene_expr")
-data("example_gene_list")
-
 # Perform GO analysis
 go_results <- perform_go_analysis(
-  gene_list = example_gene_list,
-  organism = "hsapiens",
-  ont = "BP"
+  results_df = example_gene_expr,
+  title = "Example GO Analysis",
+  p_cutoff = 0.05,
+  genome = "hsa"
 )
 
 # Perform KEGG analysis
 kegg_results <- perform_kegg_analysis(
-  gene_list = example_gene_list,
-  organism = "hsa"
+  results_df = example_gene_expr,
+  title = "Example KEGG Analysis",
+  genome = "hsa"
 )
 
 # Perform MSigDB analysis
 msig_results <- perform_mSig_analysis(
-  gene_list = example_gene_list,
-  collection = "H"
+  results_df = example_gene_expr,
+  title = "Example MSigDB Analysis",
+  genome = "hsa"
 )
 ```
 
-### Visualization Functions
+### 4. Visualization Functions
+
+Create various types of plots:
 
 ```{r}
 # Create a basic volcano plot
@@ -113,7 +119,6 @@ volcano_plot <- create_volcano_plot(
   y_col = "P.Value",
   labels = rownames(example_gene_expr)
 )
-print(volcano_plot)
 
 # Create an interactive volcano plot
 interactive_volcano <- create_interactive_volcano_plot(
@@ -122,7 +127,6 @@ interactive_volcano <- create_interactive_volcano_plot(
   y_col = "P.Value",
   labels = rownames(example_gene_expr)
 )
-interactive_volcano
 
 # Create an interactive datatable
 dt <- create_interactive_datatable(
@@ -131,11 +135,14 @@ dt <- create_interactive_datatable(
   filter = "top",
   download_buttons = TRUE
 )
-dt
 ```
 
-## Session Info
+## Additional Information
+
+For more detailed information about specific functions, use the R help system:
 
 ```{r}
-sessionInfo()
+?analyze_pcr
+?perform_go_analysis
+?create_volcano_plot
 ``` 
