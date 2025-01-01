@@ -23,7 +23,7 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-`Rfunk` is an R package that streamlines bioinformatics analyses, providing tools for qPCR analysis, differential expression analysis, and various visualization functions.
+`Rfunk` is an R package that streamlines my bioinformatics analyses.
 
 ## Installation
 
@@ -49,7 +49,7 @@ data(example_gene_list, package = "Rfunk")
 
 ### 1. qPCR Analysis
 
-Analyze qPCR data with the `analyze_pcr()` function:
+Analyze qPCR data exported from ThermoScientific software (WellResults.csv) with the `analyze_pcr()` function:
 
 ```{r}
 # Run qPCR analysis
