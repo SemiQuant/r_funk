@@ -6,7 +6,7 @@
 \alias{Rfunk-package}
 \title{Rfunk: Visualization Tools for Differential Expression Analysis}
 \description{
-A collection of useful R functions for bioinformatics analysis. Currently includes enhanced visualization tools for differential expression analysis, with features such as customizable volcano plots from DESeq2 results.
+A collection of useful R functions for bioinformatics analysis.
 }
 \author{
 \strong{Maintainer}: SemiQuant \email{Jason.Limberis@ucsf.edu}

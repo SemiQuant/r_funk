@@ -107,7 +107,45 @@ msig_results <- perform_mSig_analysis(
 )
 ```
 
-### 4. Visualization Functions
+### 4. Dual-Genome Sequencing Analysis
+
+Analyze and visualize dual-genome sequencing alignment data:
+
+```{r}
+# Basic dual-genome sequencing analysis
+dualseq_results <- analyze_dual_seq(
+  flagstat_file = "path/to/multiqc_samtools_flagstat.txt",
+  primary_genome = "human",
+  secondary_genome = "mtb",
+  control_sample = "posControl"
+)
+
+# Analysis excluding specific samples
+dualseq_results <- analyze_dual_seq(
+  flagstat_file = "path/to/multiqc_samtools_flagstat.txt",
+  primary_genome = "human",
+  secondary_genome = "mtb",
+  control_sample = "posControl",
+  exclude_samples = c("negControl", "blank", "water")  # Exclude negative controls and blanks
+)
+
+# Access individual plots
+dualseq_results$alignment_summary    # Shows distribution of reads between genomes
+dualseq_results$enrichment          # Shows enrichment relative to control
+dualseq_results$combined_plot       # Shows both plots combined
+
+# Save plots to HTML files
+dualseq_results <- analyze_dual_seq(
+  flagstat_file = "path/to/multiqc_samtools_flagstat.txt",
+  primary_genome = "human",
+  secondary_genome = "mtb",
+  control_sample = "posControl",
+  output_dir = "path/to/output",
+  save_plots = TRUE
+)
+```
+
+### 5. Visualization Functions
 
 Create various types of plots:
 
