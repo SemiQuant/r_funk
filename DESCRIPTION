@@ -43,6 +43,5 @@ Suggests:
     testthat,
     BiocManager
 VignetteBuilder: knitr
-Vignettes: r_funk
 Depends: 
     R (>= 3.5)
