@@ -175,6 +175,121 @@ dt <- create_interactive_datatable(
 )
 ```
 
+### 6. General-Purpose Plotting Functions
+
+#### Volcano Plots from Data Frames
+
+The `volcano_plot()` function creates flexible volcano plots from any data frame with differential expression results. Unlike `create_volcano_plot()` which works specifically with DESeq2 objects, this function works with any data frame:
+
+```{r}
+# Create toy data for demonstration
+toy_data <- create_toy_volcano_data(n_genes = 1000, n_sig = 100)
+head(toy_data)
+
+# Basic volcano plot
+p1 <- volcano_plot(toy_data)
+print(p1)
+
+# Custom thresholds
+p2 <- volcano_plot(toy_data, 
+                   padj_threshold = 0.01, 
+                   effect_size_threshold = 1.5)
+
+# Annotate more genes
+p3 <- volcano_plot(toy_data, num_annotate = 20)
+
+# Add a title
+p4 <- volcano_plot(toy_data, title = "My Differential Expression Analysis")
+
+# Get the processed data instead of plot
+volcano_data <- volcano_plot(toy_data, make_plot = FALSE)
+head(volcano_data)
+
+# Use with custom column names
+# If your data has different column names, you can specify them:
+# p5 <- volcano_plot(my_data, 
+#                    id_col = "gene_id",
+#                    pvalue_col = "pval",
+#                    padj_col = "fdr",
+#                    logfc_col = "logFC")
+```
+
+#### Interactive Enrichment Plots
+
+The `enrichment_plot()` function creates interactive scatter plots for pathway/enrichment analysis results:
+
+```{r}
+# Create toy enrichment data
+toy_enrichment <- create_toy_enrichment_data(n_pathways = 20)
+head(toy_enrichment)
+
+# Basic enrichment plot (interactive)
+p_enrich1 <- enrichment_plot(toy_enrichment)
+print(p_enrich1)
+# Note: This creates an interactive plotly plot - hover over points to see details!
+
+# Show only top 10 pathways
+p_enrich2 <- enrichment_plot(toy_enrichment, top_n = 10)
+
+# Use light theme instead of dark
+p_enrich3 <- enrichment_plot(toy_enrichment, dark_theme = FALSE)
+
+# Custom title
+p_enrich4 <- enrichment_plot(toy_enrichment, 
+                             title = "GO Term Enrichment Analysis",
+                             top_n = 15)
+
+# Use with custom column names
+# If your enrichment data has different column names:
+# p_enrich5 <- enrichment_plot(my_enrichment_data,
+#                              description_col = "pathway",
+#                              pvalue_col = "pvalue",
+#                              count_col = "gene_count")
+```
+
+#### Creating Custom Toy Data
+
+Both functions come with data generators for testing and demonstrations:
+
+```{r}
+# Create smaller dataset
+small_data <- create_toy_volcano_data(n_genes = 100, n_sig = 20, seed = 456)
+
+# Create more pathways
+large_enrichment <- create_toy_enrichment_data(n_pathways = 50, seed = 789)
+enrichment_plot(large_enrichment, top_n = 20)
+```
+
+#### Practical Workflow Example
+
+Here's a complete workflow for creating and saving plots:
+
+```{r}
+# Step 1: Create or load your differential expression data
+de_data <- create_toy_volcano_data()
+
+# Step 2: Create volcano plot
+vol_plot <- volcano_plot(de_data, 
+                         padj_threshold = 0.05,
+                         effect_size_threshold = 2,
+                         num_annotate = 15,
+                         title = "Differential Expression Analysis")
+
+# Step 3: Save the plot
+ggsave("volcano_plot.pdf", vol_plot, width = 8, height = 6)
+
+# Step 4: Create or load enrichment results
+enrich_data <- create_toy_enrichment_data()
+
+# Step 5: Create interactive enrichment plot
+enrich_plot <- enrichment_plot(enrich_data,
+                               top_n = 20,
+                               title = "Pathway Enrichment Analysis")
+
+# Step 6: Save interactive plot as HTML
+htmlwidgets::saveWidget(enrich_plot, "enrichment_plot.html")
+```
+
 ## Additional Information
 
 For more detailed information about specific functions, use the R help system:
@@ -183,4 +298,6 @@ For more detailed information about specific functions, use the R help system:
 ?analyze_pcr
 ?perform_go_analysis
 ?create_volcano_plot
+?volcano_plot
+?enrichment_plot
 ``` 
