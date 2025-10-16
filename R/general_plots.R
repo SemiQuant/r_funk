@@ -326,6 +326,22 @@ create_toy_deseq2 <- function(n_genes = 1000, n_samples = 3, seed = 123) {
   return(dds)
 }
 
+#' Create Toy Volcano Data
+#'
+#' Creates synthetic differential expression data for testing and demonstration purposes.
+#' This function generates a data frame with gene IDs, p-values, adjusted p-values,
+#' and log2 fold changes that mimics real differential expression analysis results.
+#'
+#' @param n_genes Number of genes to generate (default: 1000)
+#' @param n_sig Number of significant genes to include (default: 100)
+#' @param seed Random seed for reproducibility (default: 123)
+#'
+#' @return A data frame with columns: ID, pvalue, padj, log2FoldChange
+#' @export
+#'
+#' @examples
+#' toy_data <- create_toy_volcano_data()
+#' head(toy_data)
 create_toy_volcano_data <- function(n_genes = 1000, n_sig = 100, seed = 123) {
   set.seed(seed)
   

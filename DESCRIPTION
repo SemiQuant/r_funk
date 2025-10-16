@@ -37,12 +37,12 @@ Imports:
     gridExtra,
     knitr,
     plotly,
-    tidyverse
+    tidyverse,
+    rmarkdown
 Suggests:
     testthat,
-    rmarkdown,
-    knitr,
     BiocManager
 VignetteBuilder: knitr
+Vignettes: r_funk
 Depends: 
     R (>= 3.5)
