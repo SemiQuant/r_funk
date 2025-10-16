@@ -17,8 +17,9 @@ knitr::opts_chunk$set(
   message = FALSE,
   fig.width = 7,
   fig.height = 5,
-  eval = FALSE
+  eval = TRUE
 )
+library(ggplot2)
 ```
 
 ## Introduction
@@ -66,17 +67,22 @@ results <- analyze_pcr(
 
 ### 2. Outlier Detection
 
-Detect outliers in your data:
+Detect outliers in your RNA-seq data using DESeq2 objects:
 
 ```{r}
-# Create example data with outliers
-set.seed(123)
-data <- data.frame(
-  values = c(rnorm(97, mean = 0, sd = 1), c(5, 6, 7))  # 97 normal points and 3 outliers
-)
+# Note: This requires a DESeqDataSet object from DESeq2
+# For demonstration, we'll show how to use the function
+# with example data (this would normally be your actual DESeq2 results)
 
-# Detect outliers
-outliers <- detect_outliers(data$values)
+# Example usage with DESeq2 object:
+# outliers <- detect_outliers(dds)
+# outliers <- detect_outliers(dds, group_col = "condition")
+
+# The function returns a list with:
+# - mad_outliers: outliers based on MAD distances
+# - cook_outliers: outliers based on Cook's distances  
+# - correlation_outliers: outliers based on correlation
+# - all_outliers: combined list of all outliers
 ```
 
 ### 3. Gene Set Analysis
@@ -112,37 +118,40 @@ msig_results <- perform_mSig_analysis(
 Analyze and visualize dual-genome sequencing alignment data:
 
 ```{r}
+# Note: This requires a MultiQC flagstat file from your sequencing analysis
+# Example usage (replace with your actual file path):
+
 # Basic dual-genome sequencing analysis
-dualseq_results <- analyze_dual_seq(
-  flagstat_file = "path/to/multiqc_samtools_flagstat.txt",
-  primary_genome = "human",
-  secondary_genome = "mtb",
-  control_sample = "posControl"
-)
+# dualseq_results <- analyze_dual_seq(
+#   flagstat_file = "path/to/multiqc_samtools_flagstat.txt",
+#   primary_genome = "human",
+#   secondary_genome = "mtb",
+#   control_sample = "posControl"
+# )
 
 # Analysis excluding specific samples
-dualseq_results <- analyze_dual_seq(
-  flagstat_file = "path/to/multiqc_samtools_flagstat.txt",
-  primary_genome = "human",
-  secondary_genome = "mtb",
-  control_sample = "posControl",
-  exclude_samples = c("negControl", "blank", "water")  # Exclude negative controls and blanks
-)
+# dualseq_results <- analyze_dual_seq(
+#   flagstat_file = "path/to/multiqc_samtools_flagstat.txt",
+#   primary_genome = "human",
+#   secondary_genome = "mtb",
+#   control_sample = "posControl",
+#   exclude_samples = c("negControl", "blank", "water")  # Exclude negative controls and blanks
+# )
 
 # Access individual plots
-dualseq_results$alignment_summary    # Shows distribution of reads between genomes
-dualseq_results$enrichment          # Shows enrichment relative to control
-dualseq_results$combined_plot       # Shows both plots combined
+# dualseq_results$alignment_summary    # Shows distribution of reads between genomes
+# dualseq_results$enrichment          # Shows enrichment relative to control
+# dualseq_results$combined_plot       # Shows both plots combined
 
 # Save plots to HTML files
-dualseq_results <- analyze_dual_seq(
-  flagstat_file = "path/to/multiqc_samtools_flagstat.txt",
-  primary_genome = "human",
-  secondary_genome = "mtb",
-  control_sample = "posControl",
-  output_dir = "path/to/output",
-  save_plots = TRUE
-)
+# dualseq_results <- analyze_dual_seq(
+#   flagstat_file = "path/to/multiqc_samtools_flagstat.txt",
+#   primary_genome = "human",
+#   secondary_genome = "mtb",
+#   control_sample = "posControl",
+#   output_dir = "path/to/output",
+#   save_plots = TRUE
+# )
 ```
 
 ### 5. Visualization Functions
@@ -150,28 +159,19 @@ dualseq_results <- analyze_dual_seq(
 Create various types of plots:
 
 ```{r}
-# Create a basic volcano plot
-volcano_plot <- create_volcano_plot(
-  data = example_gene_expr,
-  x_col = "logFC",
-  y_col = "P.Value",
-  labels = rownames(example_gene_expr)
-)
+# Note: These functions require DESeq2 objects for volcano plots
+# For demonstration purposes, we'll show the function signatures:
 
-# Create an interactive volcano plot
-interactive_volcano <- create_interactive_volcano_plot(
-  data = example_gene_expr,
-  x_col = "logFC",
-  y_col = "P.Value",
-  labels = rownames(example_gene_expr)
-)
+# Create a basic volcano plot (requires DESeq2 object)
+# volcano_plot <- create_volcano_plot(dds, title = "My Volcano Plot")
+
+# Create an interactive volcano plot (requires DESeq2 object)  
+# interactive_volcano <- create_interactive_volcano_plot(dds, title = "Interactive Volcano")
 
 # Create an interactive datatable
 dt <- create_interactive_datatable(
-  data = example_gene_expr,
-  rownames = TRUE,
-  filter = "top",
-  download_buttons = TRUE
+  df = example_gene_expr,
+  caption_text = "Gene Expression Results"
 )
 ```
 

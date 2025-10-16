@@ -270,6 +270,62 @@ enrichment_plot <- function(data,
 #' @examples
 #' toy_data <- create_toy_volcano_data()
 #' head(toy_data)
+
+#' Create Toy DESeq2 Object
+#'
+#' Creates a simple DESeq2 object for testing and demonstration purposes
+#'
+#' @param n_genes Number of genes to simulate (default: 1000)
+#' @param n_samples Number of samples per condition (default: 3)
+#' @param seed Random seed for reproducibility (default: 123)
+#'
+#' @return A DESeqDataSet object
+#' @export
+#'
+#' @examples
+#' # Create toy DESeq2 object
+#' dds <- create_toy_deseq2()
+#' 
+#' # Use with volcano plot functions
+#' volcano_plot <- create_volcano_plot(dds, title = "Example Volcano Plot")
+create_toy_deseq2 <- function(n_genes = 1000, n_samples = 3, seed = 123) {
+  set.seed(seed)
+  
+  # Create sample metadata
+  sample_data <- data.frame(
+    condition = rep(c("control", "treatment"), each = n_samples),
+    sample = paste0("sample_", 1:(2 * n_samples)),
+    row.names = paste0("sample_", 1:(2 * n_samples))
+  )
+  
+  # Create count matrix
+  counts <- matrix(
+    rnbinom(n_genes * 2 * n_samples, mu = 100, size = 10),
+    nrow = n_genes,
+    ncol = 2 * n_samples
+  )
+  
+  # Add some differential expression
+  de_genes <- sample(1:n_genes, n_genes * 0.1)  # 10% DE genes
+  counts[de_genes, (n_samples + 1):(2 * n_samples)] <- 
+    counts[de_genes, (n_samples + 1):(2 * n_samples)] * 2
+  
+  rownames(counts) <- paste0("gene_", 1:n_genes)
+  colnames(counts) <- rownames(sample_data)
+  
+  # Create DESeqDataSet
+  dds <- DESeq2::DESeqDataSetFromMatrix(
+    countData = counts,
+    colData = sample_data,
+    design = ~ condition
+  )
+  
+  # Run DESeq2 analysis
+  dds <- DESeq2::DESeq(dds)
+  
+  return(dds)
+}
+
 create_toy_volcano_data <- function(n_genes = 1000, n_sig = 100, seed = 123) {
   set.seed(seed)
   
